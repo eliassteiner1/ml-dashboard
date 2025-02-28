@@ -1,0 +1,87 @@
+
+html, body { /* remove any padding and margin so that the uppermost div grid fits nicely into the window */
+    margin:  0;
+    padding: 0;
+    background-color: rgb(127, 101, 158);
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-ligatures: contextual;
+}
+
+.main-grid { /* customizable main grid layout of the app.  */
+    display:               grid;
+    gap:                   1.2vh;
+    padding:               1.2vh;
+    height:                97.6vh;
+    grid-template-rows:    repeat(11, 1fr);
+    grid-template-columns: repeat(11, 1fr);
+    grid-template-areas: 
+        "A A A A A A A A D D D"
+        "A A A A A A A A D D D"
+        "A A A A A A A A E E E"
+        "A A A A A A A A E E E"
+        "A A A A A A A A E E E"
+        "B B B B B B B B E E E"
+        "B B B B B B B B E E E"
+        "B B B B B B B B E E E"
+        "C C C C C C C C E E E"
+        "C C C C C C C C E E E"
+        "C C C C C C C C E E E"
+    ;
+}
+.main-grid-boxA { /* these classes can be applied to divs to assign them to a grid area */
+    grid-area: A;
+}
+.main-grid-boxB { /* these classes can be applied to divs to assign them to a grid area */
+    grid-area: B;
+}
+.main-grid-boxC { /* these classes can be applied to divs to assign them to a grid area */
+    grid-area: C;
+}
+.main-grid-boxD { /* these classes can be applied to divs to assign them to a grid area */
+    grid-area: D;
+}
+.main-grid-boxE { /* these classes can be applied to divs to assign them to a grid area */
+    grid-area: E;
+}
+
+.card {
+    display: flex; 
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+
+    background-color: rgb(20, 20, 20);
+    border-radius   : 1vh;
+    box-shadow      : 0vh 0.5vh 1.0vh 0vh rgba(0, 0, 0, 0.6);
+    padding         : 1vh;
+}
+.header {
+    flex-grow: 0;
+    flex-shrink: 0;
+    background-color: rgba(188, 38, 38, 0.203);
+
+    font-size: 16px;
+    font-weight: 800;
+    color: rgb(200, 200, 200);
+    border-bottom: 2px solid rgb(200, 200, 200);
+
+    padding-top: 2px;
+    padding-bottom: 2px;
+    margin-bottom: 2px;
+
+    white-space:   nowrap;   /* ensures text stays on one line */
+    overflow:      hidden;   /* ensures the overflow is cut off (needed for ellipsis) */
+    text-overflow: ellipsis; /* adds an ellipsis before the cutoff */
+}
+.body {
+    flex-grow: 1;
+    flex-shrink: 1;
+
+    font-size: 16px;
+    font-weight: 400;
+    color: rgb(200, 200, 200);
+}
+.graph {
+    height: 100%;
+    width: 100%;
+}
