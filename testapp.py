@@ -8,12 +8,11 @@ import json
 # third-party library imports
 import numpy as np
 import pandas as pd
-from dash import Dash, Input, Output, State, dcc, html, no_update
+from dash import Dash, Input, Output, State, Patch, dcc, html, no_update
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
-
 
 
 store = {
@@ -21,7 +20,7 @@ store = {
     "y": [],
 }
 
-graph = go.Figure()
+graph = make_subplots(specs=[[{"secondary_y": True}]])
 graph.update_layout(
     paper_bgcolor="rgba(20, 20, 20, 1.0)",  # Transparent background
     plot_bgcolor="rgba(20, 20, 20, 1.0)",   # Transparent plot area
@@ -31,6 +30,7 @@ graph.update_layout(
     ),
     margin=dict(l=50, r=50, t=50, b=50),  # Set margins
     uirevision="const",
+    showlegend=True,
     
     xaxis=dict(
         showgrid=True,  # Show gridlines
@@ -40,26 +40,85 @@ graph.update_layout(
         zerolinecolor="rgb(100, 100, 100)",  # Zeroline color
         zerolinewidth=2,  # Zeroline width
         ticklabelstandoff=6,
-        range=[0, 1],
+        autorangeoptions_minallowed=-0.05,
+        autorangeoptions_maxallowed=1.05,
     ),
     
     yaxis=dict(
+        title="yaxis 1",
         showgrid=True,  # Show gridlines
         gridcolor="rgb(100, 100, 100)",  # Gridline color
         gridwidth=1,  # Gridline width
         zeroline=True,  # Show zeroline
         zerolinecolor="rgb(100, 100, 100)",  # Zeroline color
+        zerolinewidth=4,  # Zeroline width
+        ticklabelstandoff=6,
+    ),
+    
+    yaxis2=dict(
+        title="yaxis 2",
+        showgrid=False,  # Show gridlines
+        gridcolor="rgb(100, 100, 100)",  # Gridline color
+        gridwidth=1,  # Gridline width
+        zeroline=True,  # Show zeroline
+        zerolinecolor="rgb(100, 0, 0)",  # Zeroline color
         zerolinewidth=2,  # Zeroline width
         ticklabelstandoff=6,
     ),
 )
-graph.add_trace(go.Scatter(
-    x = store["x"],
-    y = store["y"],
+graph.update_layout(
+    annotations = [
+        dict(
+            x         = 1.0, 
+            y         = 0.0,
+            xref      = "x", 
+            yref      = "y",
+            xanchor   = "left", 
+            yanchor   = "middle",
+            text      = f"<b> lowest:<br> {0.0:07.4f}</b>",
+            font      = dict(
+                family = "JetBrains Mono", 
+                size = 14, 
+                color = "white"
+            ),
+            showarrow = False,
+            align     = "left",
+            bgcolor   = "rgba(20, 20, 20, 1.0)",
+        ),
+    ],
+)
+graph.add_trace(go.Scatter( # 0: main trace
+    x = [],
+    y = [],
     mode = "lines",
-))
- 
-
+    name = "main trace",
+), secondary_y=False)
+graph.add_trace(go.Scatter( # 1: endpoint
+    x = [],
+    y = [],
+    mode = "markers",
+    name = "endpoint",
+    marker = dict(size=8, color="orange"),
+), secondary_y=False)
+graph.add_trace(go.Scatter( # 2: bestline
+    x = [0, 1], # this can actually stay fixed
+    y = [0, 0],
+    mode = "lines+markers",
+    name = "bestline",
+    marker = dict(
+        size=[20, 20], 
+        color="gold", 
+        symbol=["triangle-right", "triangle-left"], 
+        opacity=1,
+        line = dict(width=0)
+    ),
+), secondary_y=False)
+graph.add_trace(go.Scatter(
+    x = [None],
+    y = [None],
+    mode = "lines",
+    name = "dummy secondary tr",
+), secondary_y=True)
 
 app = Dash(__name__, external_stylesheets=[], assets_folder="./assets")
 
@@ -115,17 +174,52 @@ app.layout = html.Div(
             interval    = 500,
             n_intervals = 0,
         ),
+        dcc.Store(id="checkpoint", data=0),
     ]
 )
 
 @app.callback(
     Output("graph-card1", "figure"),
-    Input("ud-interval", "n_intervals")
+    Output("checkpoint", "data"),
+    Input("ud-interval", "n_intervals"),
+    State("checkpoint", "data"),
+    prevent_initial_call=True
 )
-def update_graph_full(n):
-    graph.data[0].x = store["x"]
-    graph.data[0].y = store["y"]
-    return graph
+def update_graph_patched(n, old_chkp):
+    ptch = Patch()
+
+    # grab index of newest available datapoint
+    new_chkp = len(store["x"])
+    
+    # maybe add some if block, that REPLACES data when old chkp is 0, to remove any initial Nones
+    
+    # only update if new data is available
+    if new_chkp > old_chkp:
+        # Append new data to the first trace (index 0)
+        ptch["data"][0]["x"].extend(store["x"][old_chkp:new_chkp])
+        ptch["data"][0]["y"].extend(store["y"][old_chkp:new_chkp])
+        
+        # change the trace data for the endpoint trace (idx 1)
+        ptch["data"][1]["x"] = [store["x"][new_chkp-1]]
+        ptch["data"][1]["y"] = [store["y"][new_chkp-1]]
+        
+        # change the trace data for the bestline trace (idx 2)
+        new_min = min(store["y"][:new_chkp])
+        ptch["data"][2]["y"] = [new_min]*2
+        
+        # modify the annotation for the bestvalue (apparently they also have indices like traces)
+        ptch["layout"]["annotations"][0]["text"] = f"<b> lowest:<br> {new_min:07.4f}</b>"
+        ptch["layout"]["annotations"][0]["y"] = new_min
+    
+        # patch the range (yaxis and yaxis2 for subplots)
+        new_min = min(store["y"][:new_chkp])
+        new_max = max(store["y"][:new_chkp])
+        ptch["layout"]["yaxis"]["autorangeoptions"]["minallowed"] = new_min - 1.0
+        ptch["layout"]["yaxis"]["autorangeoptions"]["maxallowed"] = new_max + 1.0
+    
+    return ptch, new_chkp
+
+    
 
 
 if __name__ == "__main__":
@@ -148,17 +242,21 @@ if __name__ == "__main__":
                 host         = "127.0.0.1",
                 port         = 8050,     
                 debug        = True, 
-                use_reloader = False     
+                use_reloader = False # this is necessary, because hot reload is not possible in daemon thread    
             )
         threading.Thread(target = _run, daemon = True).start()
 
     run_app(app)
     
-    N = 10000
+            
+         
+    time.sleep(5)
+    
+    N = 100_000
     for i in range(N):
         store["x"].append(i/N)
-        store["y"].append(np.sin(i/N * 10) + np.random.randn())
-        time.sleep(0.01)
+        store["y"].append( 10* (i/N) * np.sin(i/N * 20) + np.random.randn() )
+        time.sleep(0.001)
         
     run_script_spin()
 
