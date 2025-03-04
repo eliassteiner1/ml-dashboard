@@ -18,6 +18,8 @@ from plotly.subplots import make_subplots
 store = {
     "x": [],
     "y": [],
+    "knownrange": [0, 1],
+    "x_down": np.linspace(0, 1, 1000),
 }
 
 graph = make_subplots(specs=[[{"secondary_y": True}]])
@@ -132,7 +134,7 @@ app.layout = html.Div(
                 html.Div(
                     className="body",
                     children=dcc.Graph(
-                        id         = "graph-card1",
+                        id         = "graph-cardA",
                         className  = "graph",
                         responsive = True,
                         figure     = graph,
@@ -143,16 +145,32 @@ app.layout = html.Div(
         html.Div(
             className = "card main-grid-boxB",
             children  = [
-                html.Div(className = "header", children = ["title card B"]),
-                html.Div(className = "body",   children = ["somebodytext"])
-            ],
+                html.Div("someheader ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrtstuvwxyz", className="header"),
+                html.Div(
+                    className="body",
+                    children=dcc.Graph(
+                        id         = "graph-cardB",
+                        className  = "graph",
+                        responsive = True,
+                        figure     = graph,
+                    )
+                ),
+            ]
         ),
         html.Div(
             className = "card main-grid-boxC",
             children  = [
-                html.Div(className = "header", children = ["title card C"]),
-                html.Div(className = "body",   children = ["somebodytext"])
-            ],
+                html.Div("someheader ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrtstuvwxyz", className="header"),
+                html.Div(
+                    className="body",
+                    children=dcc.Graph(
+                        id         = "graph-cardC",
+                        className  = "graph",
+                        responsive = True,
+                        figure     = graph,
+                    )
+                ),
+            ]
         ),
         html.Div(
             className = "card main-grid-boxD",
@@ -179,22 +197,31 @@ app.layout = html.Div(
 )
 
 @app.callback(
-    Output("graph-card1", "figure"),
+    Output("graph-cardA", "figure"),
+    Output("graph-cardB", "figure"),
+    Output("graph-cardC", "figure"),
     Output("checkpoint", "data"),
     Input("ud-interval", "n_intervals"),
     State("checkpoint", "data"),
     prevent_initial_call=True
 )
 def update_graph_patched(n, old_chkp):
-    ptch = Patch()
-
+    
+    if len(store["x"]) <= 0:
+        return no_update
+    
+    # downsample data
+    lastidx = np.searchsorted(store["x_down"], store["x"][-1])-1 # find last coarse grid point with full data avail!
+    x_down  = store["x_down"]
+    y_down  = np.interp(x_down[0:lastidx+1], store["x"], store["y"])
+    
     # grab index of newest available datapoint
     new_chkp = len(store["x"])
     
-    # maybe add some if block, that REPLACES data when old chkp is 0, to remove any initial Nones
     
-    # only update if new data is available
-    if new_chkp > old_chkp:
+    ptch = Patch()
+    # maybe add some if block, that REPLACES data when old chkp is 0, to remove any initial Nones
+    if new_chkp > old_chkp: # only update if new data is available
         # Append new data to the first trace (index 0)
         ptch["data"][0]["x"].extend(store["x"][old_chkp:new_chkp])
         ptch["data"][0]["y"].extend(store["y"][old_chkp:new_chkp])
@@ -217,7 +244,7 @@ def update_graph_patched(n, old_chkp):
         ptch["layout"]["yaxis"]["autorangeoptions"]["minallowed"] = new_min - 1.0
         ptch["layout"]["yaxis"]["autorangeoptions"]["maxallowed"] = new_max + 1.0
     
-    return ptch, new_chkp
+    return ptch, ptch, ptch, new_chkp
 
     
 
@@ -247,16 +274,17 @@ if __name__ == "__main__":
         threading.Thread(target = _run, daemon = True).start()
 
     run_app(app)
-    
-            
          
-    time.sleep(5)
+    time.sleep(2)
     
-    N = 100_000
+    N = 100_00
     for i in range(N):
+        
+        
         store["x"].append(i/N)
         store["y"].append( 10* (i/N) * np.sin(i/N * 20) + np.random.randn() )
-        time.sleep(0.001)
+        
+        time.sleep(0.01)
         
     run_script_spin()
 
