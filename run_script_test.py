@@ -10,17 +10,18 @@ if __name__ == "__main__":
     os.system("cls" if os.name == "nt" else "clear") # start with an empty terminal
     print(f"\033[1m\033[38;2;51;153;102mrunning script {__file__}... \033[0m")
     
-    total_x = 1_000
+    totalx = 1_000
     setup_options = dict(
         graph1 = dict(
             options = dict(
                 title       = "The Plot in Card A (first one)",
+                subplots    = ...,
                 xlabel      = "nr of samples processed total",
                 ylabel1     = "losses",
                 ylabel2     = False,
                 showmax     = "trace2",
                 showmin     = False,
-                totalx      = total_x,
+                totalx      = totalx,
                 downsamplex = False,
             ),
             traces  = dict(
@@ -31,12 +32,13 @@ if __name__ == "__main__":
         graph2 = dict(
             options = dict(
                 title       = "The Plot in Card B (second one)",
+                subplots    = ...,
                 xlabel      = False,
                 ylabel1     = "eff. rates",
                 ylabel2     = "batch size",
                 showmax     = False,
                 showmin     = False,
-                totalx      = total_x,
+                totalx      = totalx,
                 downsamplex = False,
             ),
             traces  = dict(
@@ -48,17 +50,18 @@ if __name__ == "__main__":
         graph3 = dict(
             options = dict(
                 title       = "The Plot in Card C (third one)",
+                subplots    = ...,
                 xlabel      = False,
                 ylabel1     = "grad norm",
                 ylabel2     = "weight norm",
                 showmax     = False,
                 showmin     = False,
-                totalx      = total_x,
+                totalx      = totalx,
                 downsamplex = False, 
             ),
             traces  = dict(
                 trace1 = dict(N = "grad norm",   C = "steelblue", T = "primary",   E = False, P = True, S = "linear"),
-                trace2 = dict(N = "weight norm", C = "brown",     T = "secondary", E = False, P = True, S = "linear"),  
+                trace2 = dict(N = "weight norm", C = "olive",     T = "secondary", E = False, P = True, S = "linear"),  
             ),
         ),
     )
@@ -71,7 +74,7 @@ if __name__ == "__main__":
     rnd = lambda: np.random.rand()
     time.sleep(2)
     N = 100
-    for i in np.linspace(0, total_x, N):
+    for i in np.linspace(0, totalx, N):
         
         PLOTTER.add_data(graph=1, trace=1, x=i, y=2*rnd(), yStdLo=rnd()+1, yStdHi=rnd()+1)
         

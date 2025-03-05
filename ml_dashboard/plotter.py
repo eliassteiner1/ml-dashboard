@@ -43,11 +43,12 @@ class DashPlotter:
         }
 
         # this is the container for the actual plotter app
-        self._app = make_plotter_app()
+        self._app = make_plotter_app(self._setup_options, self._store, self._n2t)
 
     def _make_store(self):
         store = {}
         
+        # TODO: change so that this actually uses the number at the end of traceX instead of a counter!
         g, t = 1, 1
         for keyG in self._setup_options.keys():
             store[f"g{g}"] = {}

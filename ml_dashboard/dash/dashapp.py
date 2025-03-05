@@ -7,7 +7,7 @@ from ml_dashboard.dash.components import make_graphcard
 from ml_dashboard.dash.components import make_flexgraph
 
 
-def make_plotter_app():
+def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
     
     app = Dash(
         __name__,
@@ -15,15 +15,16 @@ def make_plotter_app():
         assets_folder        = "./assets" # specify assets folder because project structure is different from default
     )
     
-    testgraph = make_flexgraph()
+    graph1 = make_flexgraph(setup_options, store, n2t, graphnr=1)
+    graph2 = make_flexgraph(setup_options, store, n2t, graphnr=2)
+    graph3 = make_flexgraph(setup_options, store, n2t, graphnr=3)
     
     app.layout = html.Div(
         className = "main-grid",
         children = [
-            make_graphcard(title = "title A", gridbox = "A", graphid = "graph1", graphfig = testgraph),
-            make_graphcard(title = "title B", gridbox = "B", graphid = "graph2", graphfig = testgraph),
-            make_graphcard(title = "title C", gridbox = "C", graphid = "graph3", graphfig = testgraph),
-
+            make_graphcard(title = "title A", gridbox = "A", graphid = "graph1", graphfig = graph1),
+            make_graphcard(title = "title B", gridbox = "B", graphid = "graph2", graphfig = graph2),
+            make_graphcard(title = "title C", gridbox = "C", graphid = "graph3", graphfig = graph3),
             html.Div(
                 className = "card main-grid-boxD",
                 children  = [
@@ -40,11 +41,24 @@ def make_plotter_app():
             ),
             
             dcc.Interval(
-                id          = "ud-interval",
+                id          = "ud_interval-1",
                 interval    = 1000,
                 n_intervals = 0,
             ),
-            dcc.Store(id="checkpoint", data=-1),
+            dcc.Interval(
+                id          = "ud_interval-2",
+                interval    = 1000,
+                n_intervals = 0,
+            ),
+            dcc.Interval(
+                id          = "ud_interval-3",
+                interval    = 1000,
+                n_intervals = 0,
+            ),
+            
+            dcc.Store(id="chkps-1", data=-1),
+            dcc.Store(id="chkps-2", data=-1),
+            dcc.Store(id="chkps-3", data=-1),
         ]
     )
     

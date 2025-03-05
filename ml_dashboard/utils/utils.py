@@ -17,3 +17,38 @@ def adjust_alpha(color: str, adjust_a: float):
     a *= adjust_a
     a = max(0, min(a, 1)) # Ensure alpha stays in range [0, 1]
     return f"rgba({r}, {g}, {b}, {a:.3f})"
+
+def determine_single_range(MAX: float, MIN: float, factor: float):
+    """ MAX is max over all tracex and MIN is min over all traces """
+    
+    if MAX < MIN:
+        raise ValueError(f"MAX should not be smaller than MIN! (got {MAX=}, {MIN=})")
+    
+    possible = [(1+factor)*MAX, -factor*MAX, (1+factor)*MIN, -factor*MIN]
+    rng      = [min(possible), max(possible)]
+    return rng
+
+def determine_mixed_range(RNG1: list, RNG2: list):
+    """ determines the best range for a subplot mixed y axis range so that both ranges have the same ratio of above zeroline and below zeroline spans. assumes max is > 0 and min is < 0!"""
+
+    R1_ORIG = RNG1[1] / -RNG1[0] 
+    R2_ORIG = RNG2[1] / -RNG2[0]
+    RBAR    = (R1_ORIG * R2_ORIG)**0.5
+    
+    # new primary range
+    if R1_ORIG > RBAR:
+        RNG1[0] = (R1_ORIG / RBAR) * RNG1[0]
+        RNG1[1] = RNG1[1]
+    if R1_ORIG < RBAR:
+        RNG1[0] = RNG1[0]
+        RNG1[1] = (RBAR / R1_ORIG) * RNG1[1]
+        
+    # new secondary range
+    if R2_ORIG > RBAR:
+        RNG2[0] = (R2_ORIG / RBAR) * RNG2[0]
+        RNG2[1] = RNG2[1]
+    if R2_ORIG < RBAR:
+        RNG2[0] = RNG2[0]
+        RNG2[1] = (RBAR / R2_ORIG) * RNG2[1]
+        
+    return RNG1, RNG2
