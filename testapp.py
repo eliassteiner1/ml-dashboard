@@ -5,6 +5,7 @@ import threading
 import time
 import copy
 import json
+import bisect
 # third-party library imports
 import numpy as np
 import pandas as pd
@@ -14,12 +15,30 @@ import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
 
+def perf_timer(func):
+    def wrapper(*args, **kwargs):
+        t0 = time.perf_counter()
+        result = func(*args, **kwargs)
+        t1 = time.perf_counter()
+        print(f"callback execution took: {(t1-t0)*1000:.4f}ms")
+        return result
+    return wrapper
 
+def get_idx_next_smaller(seq: list | np.ndarray, new_element: float):
+
+    if isinstance(seq, list):
+        return np.clip(bisect.bisect_left(seq, new_element) - 1, a_min=0, a_max=None)
+    if isinstance(seq, np.ndarray):
+        return np.clip(np.searchsorted(seq, new_element) - 1, a_min=0, a_max=None)
+    
+    raise TypeError(f"the sequence input has to be either a list or and np.ndarray!") 
+
+N_DOWN = 10_000
 store = {
     "x": [],
     "y": [],
     "knownrange": [0, 1],
-    "x_down": np.linspace(0, 1, 1000),
+    "x_down": np.linspace(0, 1, N_DOWN),
 }
 
 graph = make_subplots(specs=[[{"secondary_y": True}]])
@@ -30,7 +49,7 @@ graph.update_layout(
         family="JetBrains Mono",  # Set all text to JetBrains Mono
         color="rgb(200, 200, 200)"  # Text color
     ),
-    margin=dict(l=50, r=50, t=50, b=50),  # Set margins
+    margin=dict(l=50, r=50, t=30, b=30),  # Set margins
     uirevision="const",
     showlegend=True,
     
@@ -189,62 +208,69 @@ app.layout = html.Div(
         
         dcc.Interval(
             id          = "ud-interval",
-            interval    = 500,
+            interval    = 1000,
             n_intervals = 0,
         ),
-        dcc.Store(id="checkpoint", data=0),
+        dcc.Store(id="checkpoint", data=-1),
     ]
 )
 
 @app.callback(
-    Output("graph-cardA", "figure"),
-    Output("graph-cardB", "figure"),
-    Output("graph-cardC", "figure"),
-    Output("checkpoint", "data"),
-    Input("ud-interval", "n_intervals"),
-    State("checkpoint", "data"),
+    [Output("graph-cardA", "figure"), Output("checkpoint", "data")],
+    [Input("ud-interval", "n_intervals")], 
+    [State("checkpoint", "data")],
     prevent_initial_call=True
 )
 def update_graph_patched(n, old_chkp):
-    
-    if len(store["x"]) <= 0:
-        return no_update
-    
-    # downsample data
-    lastidx = np.searchsorted(store["x_down"], store["x"][-1])-1 # find last coarse grid point with full data avail!
-    x_down  = store["x_down"]
-    y_down  = np.interp(x_down[0:lastidx+1], store["x"], store["y"])
-    
-    # grab index of newest available datapoint
-    new_chkp = len(store["x"])
-    
-    
+    DO_DOWNSAMPLE = True
     ptch = Patch()
-    # maybe add some if block, that REPLACES data when old chkp is 0, to remove any initial Nones
-    if new_chkp > old_chkp: # only update if new data is available
-        # Append new data to the first trace (index 0)
-        ptch["data"][0]["x"].extend(store["x"][old_chkp:new_chkp])
-        ptch["data"][0]["y"].extend(store["y"][old_chkp:new_chkp])
-        
-        # change the trace data for the endpoint trace (idx 1)
-        ptch["data"][1]["x"] = [store["x"][new_chkp-1]]
-        ptch["data"][1]["y"] = [store["y"][new_chkp-1]]
-        
-        # change the trace data for the bestline trace (idx 2)
-        new_min = min(store["y"][:new_chkp])
-        ptch["data"][2]["y"] = [new_min]*2
-        
-        # modify the annotation for the bestvalue (apparently they also have indices like traces)
-        ptch["layout"]["annotations"][0]["text"] = f"<b> lowest:<br> {new_min:07.4f}</b>"
-        ptch["layout"]["annotations"][0]["y"] = new_min
     
-        # patch the range (yaxis and yaxis2 for subplots)
-        new_min = min(store["y"][:new_chkp])
-        new_max = max(store["y"][:new_chkp])
-        ptch["layout"]["yaxis"]["autorangeoptions"]["minallowed"] = new_min - 1.0
-        ptch["layout"]["yaxis"]["autorangeoptions"]["maxallowed"] = new_max + 1.0
+    if len(store["x"]) == 0: # exit when no data is available (avoids errors in subsequent code)
+        return ptch, no_update 
     
-    return ptch, ptch, ptch, new_chkp
+    if DO_DOWNSAMPLE is False:
+        # freeze the current length of the store, to handle data being appended while this callback runs. It can actually happen, that data is appended in between accessing storex and storey, so that they have unequal length! (can use either x or y length)
+        idx_raw_newest = len(store["x"]) - 1 
+        new_chkp       = idx_raw_newest
+        
+        # exit with no update if absolutely now new data samples are available
+        if new_chkp <= old_chkp:
+            return ptch, no_update
+        
+        # create the patch entry for appending data (tr idx 0)
+        ptch["data"][0]["x"].extend(list( store["x"][old_chkp+1:new_chkp+1] ))
+        ptch["data"][0]["y"].extend(list( store["y"][old_chkp+1:new_chkp+1] ))
+        
+    if DO_DOWNSAMPLE is True:
+        # freeze the current length of the store, to handle data being appended while this callback runs. It can actually happen, that data is appended in between accessing storex and storey, so that they have unequal length! (can use either x or y length)
+        idx_raw_newest = len(store["x"]) - 1 
+        
+        # determine the potential new checkpoint: finds the index of the next smaller element (to latest raw x) in the downsampled x "grid". this will be the latest downsampled point that is fully covered by raw data
+        new_chkp = get_idx_next_smaller(store["x_down"], store["x"][idx_raw_newest])
+        
+        # exit with no update, if the new raw data doesn't cover a full downsampled x interval
+        if new_chkp <= old_chkp:
+            return ptch, no_update
+        
+        # find the lower end of the raw data that actually needs to be sampled. (just needs to fully cover the x downsampled interval from old_chkp to new_chkp, anything else is redundant)
+        idx_raw_oldest = get_idx_next_smaller(store["x"], store["x_down"][old_chkp+1])
+        
+        # actually downsample the data
+        y_down = np.interp(
+            store["x_down"][old_chkp+1:new_chkp+1],
+            store["x"][idx_raw_oldest:idx_raw_newest+1],
+            store["y"][idx_raw_oldest:idx_raw_newest+1]
+            )
+        
+        # create the patch entry for appending data (tr idx 0)
+        ptch["data"][0]["x"].extend(list( store["x_down"][old_chkp+1:new_chkp+1] ))
+        ptch["data"][0]["y"].extend(list( y_down ))
+
+        # change the trace data for the endpoint trace (tr idx 1)
+        ptch["data"][1]["x"] = [store["x_down"][new_chkp]]
+        ptch["data"][1]["y"] = [y_down[-1]]
+        
+    return ptch, new_chkp
 
     
 
@@ -277,15 +303,15 @@ if __name__ == "__main__":
          
     time.sleep(2)
     
-    N = 100_00
+    N = 100_000
     for i in range(N):
-        
         
         store["x"].append(i/N)
         store["y"].append( 10* (i/N) * np.sin(i/N * 20) + np.random.randn() )
         
-        time.sleep(0.01)
-        
+        time.sleep(0.0008)
+    
+    print(store["x"][-1])
     run_script_spin()
 
     
