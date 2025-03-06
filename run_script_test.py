@@ -77,7 +77,7 @@ if __name__ == "__main__":
     for i in np.linspace(0, totalx, N):
         
         PLOTTER.add_data(graph=1, trace=1, 
-                         x=i, y= 5*(i/totalx) * np.sin(40*i/totalx) + 2*rnd() + 10, yStdLo=rnd()+1, yStdHi=rnd()+1)
+                         x=i, y= 5*(i/totalx) * np.sin(40*i/totalx) + 2*rnd() + -10, yStdLo=rnd()+1, yStdHi=rnd()+1)
         PLOTTER.add_data(graph=1, trace=2, 
                          x=i, y=(2 - i/totalx)*(5 + rnd()))
         

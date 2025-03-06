@@ -93,6 +93,7 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
         trc = setup_options["graph1"]["traces"]
         
         DO_DOWNSAMPLE   = False
+        
         anyMinMaxChange = False
         
         ptch = Patch()
@@ -145,41 +146,40 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
               
             # min max lines  ===================================================
             
-            # separately track if ANY traces have changed their min/max for range update!
-            if (store[f"g1"][f"t{t}_yMinNew"] is True) or (store[f"g1"][f"t{t}_yMaxNew"] is True):
+            # already check if min / max has changed and reset flag to avoid missing updates. 
+            hasNewMin = False
+            hasNewMax = False
+            if store[f"g1"][f"t{t}_yMinNew"] is True:
+                hasNewMin       = True
                 anyMinMaxChange = True
+                store[f"g1"][f"t{t}_yMinNew"] = False
+                
+            if store[f"g1"][f"t{t}_yMaxNew"] is True:
+                hasNewMax       = True
+                anyMinMaxChange = True
+                store[f"g1"][f"t{t}_yMaxNew"] = False
+                
+            # update showmin trace
+            if (opt["showmin"] == keyT) and (hasNewMin is True):                 
+                n2t_nr = n2t[f"g1"][f"t{t}_minline"]
+                newMin = store[f"g1"][f"t{t}_yMin"]
+                
+                ptch["data"][n2t_nr]["y"] = [newMin]*2
+                
+                ptch["layout"]["annotations"][0]["text"] = f"<b> minimum:<br> {newMin:07.4f}</b>"
+                ptch["layout"]["annotations"][0]["y"] = newMin
+                ptch["layout"]["annotations"][0]["visible"] = True
             
-            # showmin trace
-            if opt["showmin"] == keyT:
-                if store[f"g1"][f"t{t}_yMinNew"] is True:
-                    store[f"g1"][f"t{t}_yMinNew"] = False # reset as asap as to not miss any new changes!
-                    
-                    n2t_nr = n2t[f"g1"][f"t{t}_minline"]
-                    newMin = store[f"g1"][f"t{t}_yMin"]
-                    
-                    ptch["data"][n2t_nr]["y"] = [newMin]*2
-                    
-                    ptch["layout"]["annotations"][0]["text"] = f"<b> minimum:<br> {newMin:07.4f}</b>"
-                    ptch["layout"]["annotations"][0]["y"] = newMin
-                    ptch["layout"]["annotations"][0]["visible"] = True
-            
-            # showmax trace
-            if opt["showmax"] == keyT:
-                if store[f"g1"][f"t{t}_yMaxNew"] is True:
-                    store[f"g1"][f"t{t}_yMaxNew"] = False # reset as asap as to not miss any new changes!
-                    
-                    n2t_nr = n2t[f"g1"][f"t{t}_maxline"]
-                    newMax = store[f"g1"][f"t{t}_yMax"]
-                    
-                    ptch["data"][n2t_nr]["y"] = [newMax]*2
-            
-                    ptch["layout"]["annotations"][0]["text"] = f"<b> maximum:<br> {newMax:07.4f}</b>"
-                    ptch["layout"]["annotations"][0]["y"] = newMax
-                    ptch["layout"]["annotations"][0]["visible"] = True
-                    
-            # reset the new min / max flags here too, because otherwise they are only reset when there's a showmin / max
-            store[f"g1"][f"t{t}_yMinNew"] = False
-            store[f"g1"][f"t{t}_yMaxNew"] = False
+            # update showmax trace
+            if (opt["showmax"] == keyT) and (hasNewMax is True):    
+                n2t_nr = n2t[f"g1"][f"t{t}_maxline"]
+                newMax = store[f"g1"][f"t{t}_yMax"]
+                
+                ptch["data"][n2t_nr]["y"] = [newMax]*2
+        
+                ptch["layout"]["annotations"][0]["text"] = f"<b> maximum:<br> {newMax:07.4f}</b>"
+                ptch["layout"]["annotations"][0]["y"] = newMax
+                ptch["layout"]["annotations"][0]["visible"] = True
         
         # min max range ========================================================
 
@@ -190,32 +190,48 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
             MIN = min([store[f"g1"][f"t{int(keyT[-1])}_yMin"] for keyT in trc.keys()] + [0])
             MAX = max([store[f"g1"][f"t{int(keyT[-1])}_yMax"] for keyT in trc.keys()] + [0])
 
-            yrange = determine_single_range(MAX, MIN, factor=0.1)
+            yRng = determine_single_range(MAX, MIN, factor=0.1)
             
-            ptch["layout"]["yaxis"]["autorangeoptions"]["minallowed"] = yrange[0]
-            ptch["layout"]["yaxis"]["autorangeoptions"]["maxallowed"] = yrange[1]
+            ptch["layout"]["yaxis"]["autorangeoptions"]["minallowed"] = yRng[0]
+            ptch["layout"]["yaxis"]["autorangeoptions"]["maxallowed"] = yRng[1]
                 
         if (anyMinMaxChange is True) and (opt["subplots"] is True):
             
             # gather all mins / maxes but separate for primary and secondary plot
-            minI_coll  = [0]
-            minII_coll = [0]
-            maxI_coll  = [0]
-            maxII_coll = [0]
+            min1_coll = [0]
+            max1_coll = [0]
+            min2_coll = [0]
+            max2_coll = [0]
             
             for keyT in trc.keys():
                 t = int(keyT[-1])
                 
                 if trc[keyT]["T"] == "primary":
-                    minI_coll.append(store[f"g1"][f"t{t}_yMin"])
-                    maxI_coll.append(store[f"g1"][f"t{t}_yMax"])
+                    min1_coll.append(store[f"g1"][f"t{t}_yMin"])
+                    max1_coll.append(store[f"g1"][f"t{t}_yMax"])
                 if trc[keyT]["T"] == "secondary":
-                    minII_coll.append(store[f"g1"][f"t{t}_yMin"])
-                    maxII_coll.append(store[f"g1"][f"t{t}_yMax"])
-                    
-            print(minI_coll, "prim")
-            print(minII_coll, "seco")
-        
+                    min2_coll.append(store[f"g1"][f"t{t}_yMin"])
+                    max2_coll.append(store[f"g1"][f"t{t}_yMax"])
+            
+            [store[f"g1"][f"t{int(keyT[-1])}_yMin"] if trc[keyT]["T"] == "primary" else 0 for keyT in trc.keys()] + [0]
+            
+            
+            
+            MIN1 = min(min1_coll)
+            MAX1 = max(max1_coll)
+            MIN2 = min(min2_coll)
+            MAX2 = max(max2_coll)
+            
+            yRng1 = determine_single_range(MIN1, MAX1, factor=0.1)
+            yRng2 = determine_single_range(MIN2, MAX2, factor=0.1)
+            
+            yRng1, yRng2 = determine_mixed_range(yRng1, yRng2)
+            
+            ptch["layout"]["yaxis"]["autorangeoptions"]["minallowed"] = yRng1[0]
+            ptch["layout"]["yaxis"]["autorangeoptions"]["maxallowed"] = yRng1[1]
+ 
+            ptch["layout"]["yaxis2"]["autorangeoptions"]["minallowed"] = yRng2[0]
+            ptch["layout"]["yaxis2"]["autorangeoptions"]["maxallowed"] = yRng2[1]
 
             
             
