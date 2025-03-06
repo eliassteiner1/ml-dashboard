@@ -13,6 +13,7 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
     GRAY_DARK      = "rgb(100, 100, 100)"
     PLOT_BGCOLOR   = "rgba(0, 0, 0, 0.0)"
     PAPER_BGCOLOR  = "rgba(0, 0, 0, 0.0)"
+    ANNOT_BGCOLOR  = "rgba(20, 20, 20, 1.0)"
     GRIDWIDTH      = 1.0
     ZEROLINEWIDTH =  2.0
     
@@ -74,8 +75,8 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
             
             # create the trace
             trace = go.Scatter(
-                x          = [None],
-                y          = [None], 
+                x          = [0, xrange[1]], # TODO: check if this is coorect
+                y          = [None, None], 
                 mode       = "lines+markers",
                 line       = dict(
                     color = trc[trace_w_min_key]["C"],
@@ -101,6 +102,32 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
             
             # add an entry for the dict that matches a name to each trace number
             n2t[f"g{graphnr}"][f"t{trace_w_min_nr}_minline"] = len(n2t[f"g{graphnr}"])
+            
+            # add the accompanying annotation (hidden until first data update!)
+            fig.update_layout(
+                annotations = [
+                    dict(
+                        x       = xrange[1],
+                        y       = 0, # just a random number for invisible initialization
+                        xref    = "x",
+                        yref    = "y", # optional y2 should not be neccessary, subplots and showmin/max is exclusive!
+                        xanchor = "left",
+                        yanchor = "middle",
+                        text    = f"<b> minimum:<br> {0:07.4f}</b>", # same here, random init
+                        font      = dict(
+                            family = "JetBrains Mono", 
+                            size = 14, 
+                            color = trc[trace_w_min_key]["C"],
+                        ),
+                        showarrow = False,
+                        align     = "left",
+                        bgcolor   = ANNOT_BGCOLOR,
+                        visible   = False, # will be made visible with the first data update
+                    )
+                ]
+            )
+            
+            
         return fig
     
     def _add_traces_max(opt: dict, trc: dict, fig: go.Figure):
@@ -110,8 +137,8 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
             
             # create the trace
             trace = go.Scatter(
-                x          = [None],
-                y          = [None], 
+                x          = [0, xrange[1]],
+                y          = [None, None], 
                 mode       = "lines+markers",
                 line       = dict(
                     color = trc[trace_w_max_key]["C"],
@@ -137,6 +164,31 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
             
             # add an entry for the dict that matches a name to each trace number
             n2t[f"g{graphnr}"][f"t{trace_w_max_nr}_maxline"] = len(n2t[f"g{graphnr}"])
+            
+            # add the accompanying annotation (hidden until first data update!)
+            fig.update_layout(
+                annotations = [
+                    dict(
+                        x       = xrange[1],
+                        y       = 0, # just a random number for invisible initialization
+                        xref    = "x",
+                        yref    = "y", # optional y2 should not be neccessary, subplots and showmin/max is exclusive!
+                        xanchor = "left",
+                        yanchor = "middle",
+                        text    = f"<b> maximum:<br> {0:07.4f}</b>", # same here, random init
+                        font      = dict(
+                            family = "JetBrains Mono", 
+                            size = 14, 
+                            color = trc[trace_w_max_key]["C"],
+                        ),
+                        showarrow = False,
+                        align     = "left",
+                        bgcolor   = ANNOT_BGCOLOR,
+                        visible   = False, # will be made visible with the first data update
+                    )
+                ]
+            )
+            
         return fig
     
     def _add_traces_error(opt: dict, trc: dict, fig: go.Figure):
@@ -229,7 +281,6 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
             # add an entry for the dict that matches a name to each trace number
             n2t[f"g{graphnr}"][f"t{t}_point"] = len(n2t[f"g{graphnr}"])
         return fig
-    
     
     def _ud_layout(opt: dict, trc: dict, fig: go.Figure):
         
@@ -328,7 +379,6 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
         )
         
         return fig
-    
     
     def _ud_y_axis_mono(opt: dict, trc: dict, fig: go.Figure):
         

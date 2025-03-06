@@ -5,10 +5,22 @@ import plotly.graph_objects as go
 
 from ml_dashboard.dash.components import make_graphcard
 from ml_dashboard.dash.components import make_flexgraph
+from ml_dashboard.utils           import determine_single_range, determine_mixed_range
 
+
+import time
+def perf_timer(func):
+    def wrapper(*args, **kwargs):
+        t0 = time.perf_counter()
+        result = func(*args, **kwargs)
+        t1 = time.perf_counter()
+        print(f"callback execution took: {(t1-t0)*1000:.4f}ms")
+        return result
+    return wrapper
 
 def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
     
+    # declare variable and handles -------------------------------------------------------------------------------------
     app = Dash(
         __name__,
         external_stylesheets = [],
@@ -18,7 +30,13 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
     graph1 = make_flexgraph(setup_options, store, n2t, graphnr=1)
     graph2 = make_flexgraph(setup_options, store, n2t, graphnr=2)
     graph3 = make_flexgraph(setup_options, store, n2t, graphnr=3)
+
+    # initialize a checkpoint dict to -1 for each trace to pass to the dcc.stores (temporary)
+    chkpts = []
+    for graphXdict in setup_options.values():
+        chkpts.append({f"t{int(keyT[-1])}": -1 for keyT in graphXdict["traces"].keys()})
     
+    # app layout -------------------------------------------------------------------------------------------------------
     app.layout = html.Div(
         className = "main-grid",
         children = [
@@ -41,25 +59,169 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
             ),
             
             dcc.Interval(
-                id          = "ud_interval-1",
+                id          = "ud-interval-1",
                 interval    = 1000,
                 n_intervals = 0,
             ),
             dcc.Interval(
-                id          = "ud_interval-2",
+                id          = "ud-interval-2",
                 interval    = 1000,
                 n_intervals = 0,
             ),
             dcc.Interval(
-                id          = "ud_interval-3",
+                id          = "ud-interval-3",
                 interval    = 1000,
                 n_intervals = 0,
             ),
             
-            dcc.Store(id="chkps-1", data=-1),
-            dcc.Store(id="chkps-2", data=-1),
-            dcc.Store(id="chkps-3", data=-1),
+            # TODO: initialize with actual dict and -1 for each t
+            dcc.Store(id="chkp-graph-1", data=chkpts[0]),
+            dcc.Store(id="chkp-graph-2", data=chkpts[1]),
+            dcc.Store(id="chkp-graph-3", data=chkpts[2]),
         ]
     )
+    
+    # callbacks --------------------------------------------------------------------------------------------------------
+    @app.callback(
+        [Output("graph1", "figure"), Output("chkp-graph-1", "data")],
+        [Input("ud-interval-1", "n_intervals")],
+        [State("chkp-graph-1", "data")]
+    )
+    def update_graph_1(n, chkp_dict):
+        
+        opt = setup_options["graph1"]["options"]
+        trc = setup_options["graph1"]["traces"]
+        
+        DO_DOWNSAMPLE   = False
+        anyMinMaxChange = False
+        
+        ptch = Patch()
+        
+        # loop through all the traces and apply all possible updates to each
+        for keyT in trc.keys():
+            t = int(keyT[-1])
+            
+            # skip this trace, when it has no main data anyways (avoidy empty list issues down the line)
+            if (len(store[f"g1"][f"t{t}_x"])) == 0 or (len(store[f"g1"][f"t{t}_y"]) == 0):
+                continue 
+            
+            # data dependent stuff =============================================
+            
+            # main data update without downsampling
+            if DO_DOWNSAMPLE is False:
+                # freeze the current length of the raw data store, so that it can handle having data appended to the store while this callback runs. It can actually happen, that data is appended in between accessing storex and storey, so that they have unequal length! (can use either x or y length)
+                idx_raw_newest = min(len(store[f"g1"][f"t{t}_x"]), len(store[f"g1"][f"t{t}_y"])) -1
+                
+                old_chkp = chkp_dict[f"t{t}"]
+                new_chkp = idx_raw_newest
+                
+                # only do data update if there is some new data
+                if new_chkp > old_chkp:
+                    # main trace update ----------------------------------------
+                    n2t_nr = n2t[f"g1"][f"t{t}_main"]
+                    ptch["data"][n2t_nr]["x"].extend(store[f"g1"][f"t{t}_x"][old_chkp+1:new_chkp+1])
+                    ptch["data"][n2t_nr]["y"].extend(store[f"g1"][f"t{t}_y"][old_chkp+1:new_chkp+1])
+                    
+                    # endpoint trace -------------------------------------------
+                    if trc[keyT]["P"] is True:
+                        n2t_nr = n2t[f"g1"][f"t{t}_point"]
+                        ptch["data"][n2t_nr]["x"] = [store[f"g1"][f"t{t}_x"][new_chkp]]
+                        ptch["data"][n2t_nr]["y"] = [store[f"g1"][f"t{t}_y"][new_chkp]]
+                    
+                    # error trace ----------------------------------------------    
+                    if trc[keyT]["E"] is True:
+                        n2t_nr = n2t[f"g1"][f"t{t}_lo"]
+                        ptch["data"][n2t_nr]["x"].extend(store[f"g1"][f"t{t}_x"][old_chkp+1:new_chkp+1])
+                        ptch["data"][n2t_nr]["y"].extend(store[f"g1"][f"t{t}_yLo"][old_chkp+1:new_chkp+1])
+                        n2t_nr = n2t[f"g1"][f"t{t}_hi"]
+                        ptch["data"][n2t_nr]["x"].extend(store[f"g1"][f"t{t}_x"][old_chkp+1:new_chkp+1])
+                        ptch["data"][n2t_nr]["y"].extend(store[f"g1"][f"t{t}_yHi"][old_chkp+1:new_chkp+1])
+                    
+                    chkp_dict[f"t{t}"] = new_chkp
+                
+            # main data update with downsampling
+            if DO_DOWNSAMPLE is True:
+                ... 
+              
+            # min max lines  ===================================================
+            
+            # separately track if ANY traces have changed their min/max for range update!
+            if (store[f"g1"][f"t{t}_yMinNew"] is True) or (store[f"g1"][f"t{t}_yMaxNew"] is True):
+                anyMinMaxChange = True
+            
+            # showmin trace
+            if opt["showmin"] == keyT:
+                if store[f"g1"][f"t{t}_yMinNew"] is True:
+                    store[f"g1"][f"t{t}_yMinNew"] = False # reset as asap as to not miss any new changes!
+                    
+                    n2t_nr = n2t[f"g1"][f"t{t}_minline"]
+                    newMin = store[f"g1"][f"t{t}_yMin"]
+                    
+                    ptch["data"][n2t_nr]["y"] = [newMin]*2
+                    
+                    ptch["layout"]["annotations"][0]["text"] = f"<b> minimum:<br> {newMin:07.4f}</b>"
+                    ptch["layout"]["annotations"][0]["y"] = newMin
+                    ptch["layout"]["annotations"][0]["visible"] = True
+            
+            # showmax trace
+            if opt["showmax"] == keyT:
+                if store[f"g1"][f"t{t}_yMaxNew"] is True:
+                    store[f"g1"][f"t{t}_yMaxNew"] = False # reset as asap as to not miss any new changes!
+                    
+                    n2t_nr = n2t[f"g1"][f"t{t}_maxline"]
+                    newMax = store[f"g1"][f"t{t}_yMax"]
+                    
+                    ptch["data"][n2t_nr]["y"] = [newMax]*2
+            
+                    ptch["layout"]["annotations"][0]["text"] = f"<b> maximum:<br> {newMax:07.4f}</b>"
+                    ptch["layout"]["annotations"][0]["y"] = newMax
+                    ptch["layout"]["annotations"][0]["visible"] = True
+                    
+            # reset the new min / max flags here too, because otherwise they are only reset when there's a showmin / max
+            store[f"g1"][f"t{t}_yMinNew"] = False
+            store[f"g1"][f"t{t}_yMaxNew"] = False
+        
+        # min max range ========================================================
+
+        # adjust range
+        if (anyMinMaxChange is True) and (opt["subplots"] is False):
+
+            # gather all mins / maxes and take the min / max over all of them (with a ceil / floor of 0)
+            MIN = min([store[f"g1"][f"t{int(keyT[-1])}_yMin"] for keyT in trc.keys()] + [0])
+            MAX = max([store[f"g1"][f"t{int(keyT[-1])}_yMax"] for keyT in trc.keys()] + [0])
+
+            yrange = determine_single_range(MAX, MIN, factor=0.1)
+            
+            ptch["layout"]["yaxis"]["autorangeoptions"]["minallowed"] = yrange[0]
+            ptch["layout"]["yaxis"]["autorangeoptions"]["maxallowed"] = yrange[1]
+                
+        if (anyMinMaxChange is True) and (opt["subplots"] is True):
+            
+            # gather all mins / maxes but separate for primary and secondary plot
+            minI_coll  = [0]
+            minII_coll = [0]
+            maxI_coll  = [0]
+            maxII_coll = [0]
+            
+            for keyT in trc.keys():
+                t = int(keyT[-1])
+                
+                if trc[keyT]["T"] == "primary":
+                    minI_coll.append(store[f"g1"][f"t{t}_yMin"])
+                    maxI_coll.append(store[f"g1"][f"t{t}_yMax"])
+                if trc[keyT]["T"] == "secondary":
+                    minII_coll.append(store[f"g1"][f"t{t}_yMin"])
+                    maxII_coll.append(store[f"g1"][f"t{t}_yMax"])
+                    
+            print(minI_coll, "prim")
+            print(minII_coll, "seco")
+        
+
+            
+            
+
+        
+        return ptch, chkp_dict
+    
     
     return app

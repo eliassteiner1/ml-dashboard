@@ -41,6 +41,8 @@ class DashPlotter:
             "g2": {},
             "g3": {},
         }
+        
+        # TODO: add an n2a dict for doing the same with annotations!
 
         # this is the container for the actual plotter app
         self._app = make_plotter_app(self._setup_options, self._store, self._n2t)
@@ -54,16 +56,16 @@ class DashPlotter:
             store[f"g{g}"] = {}
             
             for keyT in self._setup_options[keyG]["traces"].keys():
-                store[f"g{g}"][f"t{t}_x"]       = [None] # None so that the legend shows up even when trace is empty
-                store[f"g{g}"][f"t{t}_y"]       = [None] 
+                store[f"g{g}"][f"t{t}_x"]       = []
+                store[f"g{g}"][f"t{t}_y"]       = [] 
                 store[f"g{g}"][f"t{t}_yMin"]    = float("inf")
                 store[f"g{g}"][f"t{t}_yMinNew"] = False
                 store[f"g{g}"][f"t{t}_yMax"]    = float("-inf")
                 store[f"g{g}"][f"t{t}_yMaxNew"] = False
                 
                 if self._setup_options[keyG]["traces"][keyT]["E"] is True:
-                    store[f"g{g}"][f"t{t}_yLo"] = [None]
-                    store[f"g{g}"][f"t{t}_yHi"] = [None]
+                    store[f"g{g}"][f"t{t}_yLo"] = []
+                    store[f"g{g}"][f"t{t}_yHi"] = []
                     
                 t += 1
             t  = 1
