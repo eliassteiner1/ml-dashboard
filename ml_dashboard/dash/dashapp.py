@@ -187,8 +187,8 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
         if (anyMinMaxChange is True) and (opt["subplots"] is False):
 
             # gather all mins / maxes and take the min / max over all of them (with a ceil / floor of 0)
-            MIN = min([store[f"g1"][f"t{int(keyT[-1])}_yMin"] for keyT in trc.keys()] + [0])
-            MAX = max([store[f"g1"][f"t{int(keyT[-1])}_yMax"] for keyT in trc.keys()] + [0])
+            MIN = min([store[f"g1"][f"t{int(key[-1])}_yMin"] for key in trc.keys()] + [0])
+            MAX = max([store[f"g1"][f"t{int(key[-1])}_yMax"] for key in trc.keys()] + [0])
 
             yRng = determine_single_range(MAX, MIN, factor=0.1)
             
@@ -198,33 +198,21 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
         if (anyMinMaxChange is True) and (opt["subplots"] is True):
             
             # gather all mins / maxes but separate for primary and secondary plot
-            min1_coll = [0]
-            max1_coll = [0]
-            min2_coll = [0]
-            max2_coll = [0]
-            
-            for keyT in trc.keys():
-                t = int(keyT[-1])
-                
-                if trc[keyT]["T"] == "primary":
-                    min1_coll.append(store[f"g1"][f"t{t}_yMin"])
-                    max1_coll.append(store[f"g1"][f"t{t}_yMax"])
-                if trc[keyT]["T"] == "secondary":
-                    min2_coll.append(store[f"g1"][f"t{t}_yMin"])
-                    max2_coll.append(store[f"g1"][f"t{t}_yMax"])
-            
-            [store[f"g1"][f"t{int(keyT[-1])}_yMin"] if trc[keyT]["T"] == "primary" else 0 for keyT in trc.keys()] + [0]
-            
-            
-            
-            MIN1 = min(min1_coll)
-            MAX1 = max(max1_coll)
-            MIN2 = min(min2_coll)
-            MAX2 = max(max2_coll)
-            
-            yRng1 = determine_single_range(MIN1, MAX1, factor=0.1)
-            yRng2 = determine_single_range(MIN2, MAX2, factor=0.1)
-            
+            MIN1 = min(
+                [store[f"g1"][f"t{int(keyT[-1])}_yMin"] if trc[keyT]["T"] == "primary" else 0 for keyT in trc] + [0]
+            )
+            MAX1 = max(
+                [store[f"g1"][f"t{int(keyT[-1])}_yMax"] if trc[keyT]["T"] == "primary" else 0 for keyT in trc] + [0]
+            )
+            MIN2 = min(
+                [store[f"g1"][f"t{int(keyT[-1])}_yMin"] if trc[keyT]["T"] == "secondary" else 0 for keyT in trc] + [0]
+            )
+            MAX2 = max(
+                [store[f"g1"][f"t{int(keyT[-1])}_yMax"] if trc[keyT]["T"] == "secondary" else 0 for keyT in trc] + [0]
+            )
+
+            yRng1        = determine_single_range(MIN1, MAX1, factor=0.1)
+            yRng2        = determine_single_range(MIN2, MAX2, factor=0.1)
             yRng1, yRng2 = determine_mixed_range(yRng1, yRng2)
             
             ptch["layout"]["yaxis"]["autorangeoptions"]["minallowed"] = yRng1[0]
@@ -232,10 +220,6 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
  
             ptch["layout"]["yaxis2"]["autorangeoptions"]["minallowed"] = yRng2[0]
             ptch["layout"]["yaxis2"]["autorangeoptions"]["maxallowed"] = yRng2[1]
-
-            
-            
-
         
         return ptch, chkp_dict
     
