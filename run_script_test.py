@@ -3,12 +3,42 @@ import time
 import numpy as np
 from   pprint import pprint
 from   ml_dashboard import DashPlotter
+import torch
+import torch.nn as nn
 
+class DummyNet(nn.Module):
+    def __init__(self):
+        super().__init__()
+        
+        self.mlp = nn.Sequential(
+            nn.Linear(100, 100),
+            nn.ReLU(),
+            nn.Linear(100, 100),
+            nn.ReLU(),
+            nn.Linear(100, 100),
+            nn.ReLU(),
+            nn.Linear(100, 100),
+        )
+        
+        self.layer1 = nn.Linear(100, 20)
+        self.layer2 = nn.Linear(20, 10)
+        self.layer3 = nn.Linear(10, 1)
+        self.activation = nn.ReLU()
+
+    def forward(self, x):
+        x = self.mlp(x)
+        
+        x = self.activation(self.layer1(x))
+        x = self.activation(self.layer2(x))
+        x = self.layer3(x)
+        
+        return x
+        
 
 if __name__ == "__main__":
     os.system("cls" if os.name == "nt" else "clear") # start with an empty terminal
     print(f"\033[1m\033[38;2;51;153;102mrunning script {__file__}... \033[0m")
-    
+
     totalx = 1.0
     setup_options = dict(
         graph1 = dict(
@@ -65,17 +95,18 @@ if __name__ == "__main__":
         ),
     )
     
-    PLOTTER = DashPlotter(setup_options)
+    PLOTTER = DashPlotter(setup_options, model=DummyNet(), input_size=(100, ))
     PLOTTER.run_script()
     
     rnd = lambda: np.random.rand()
-    time.sleep(0)
+    time.sleep(3)
     N = 2_000
     
     y1_old = 0
     y2_old = 0
     
     for i in np.linspace(0, totalx, N):
+        PLOTTER.batchtimer("start")
         
         # plot 1
         PLOTTER.add_data(
@@ -117,6 +148,7 @@ if __name__ == "__main__":
         y2_old += 0.08*(rnd() - 0.5)
         
         time.sleep(0.01)
+        PLOTTER.batchtimer("stop", batch_size=100)
    
     PLOTTER.run_script_spin()
         

@@ -190,5 +190,13 @@ def callback_generate_flexgraph_patch(setup_options: dict, store: dict, n2t: dic
         
     
     return PTCH, chkp_dict
+
+def callback_update_proc_speed(store: dict):
+    proc_speed = store["proc"]["speed"]
     
+    if len(proc_speed) == 0:
+        return [f"---'---.-- samples/sec"]
     
+    avg_speed = sum(proc_speed) / len(proc_speed)
+    return [f"{avg_speed:0>10,.2f} samples/sec".replace(",", "'")]
+

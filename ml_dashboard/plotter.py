@@ -13,6 +13,8 @@ import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 from   plotly.subplots import make_subplots
 import plotly.io as pio
+from   torchinfo import summary
+import webbrowser
 # local library imports
 from   ml_dashboard.dash import make_plotter_app
 
@@ -20,7 +22,7 @@ from   ml_dashboard.dash import make_plotter_app
 
 class DashPlotter:
     
-    def __init__(self, setup_options: dict):
+    def __init__(self, setup_options: dict, model: torch.nn = None, input_size: tuple = None):
         
          # TODO: sanitize input options
         self._setup_options = setup_options
@@ -33,7 +35,19 @@ class DashPlotter:
             self._setup_options[keyG]["options"]["subplots"] = any_uses_subplots
                     
         # stores all the raw data from the training loop (losses, etc...)
-        self._store = self._make_store() 
+        self._store = self._make_store()
+        if (model is not None) and (input_size) is not None:
+            model_summary = summary(
+                model, 
+                input_size = input_size, 
+                device     = "cpu", 
+                verbose    = False, 
+                col_names  = ["num_params", "input_size", "output_size", "kernel_size"],
+                col_width  = 20
+            )
+            self._store["summary"] = str(model_summary)
+        else: 
+            self._store["summary"] = "no information available!"
         
         # links an unique identifier to the respective trace number for each trace
         self._n2t = { 
@@ -76,7 +90,11 @@ class DashPlotter:
             t  = 1
             g += 1
         
-        # TODO: add proc speed stuff
+        # processing speed containers
+        store["proc"]          = {}
+        store["proc"]["speed"] = deque(maxlen=10)
+        store["proc"]["t0"]    = None
+        store["proc"]["t1"]    = None
         
         return store
         
@@ -107,9 +125,34 @@ class DashPlotter:
             self._store[f"g{graph}"][f"t{trace}_yMax"]    = float(y)
             self._store[f"g{graph}"][f"t{trace}_yMaxNew"] = True
             
-    def batchtimer(self):
-        # TODO: implement
-        ...
+    def batchtimer(self, action: str, batch_size: int = None):
+        
+        if action not in ["start", "stop", "read"]:
+            raise ValueError(f"only 'start', 'stop' and 'read' allowed as action! (got {action})")
+        
+        if action == "start": # starts the timer
+            self._store["proc"]["t0"] = time.perf_counter()
+            self._store["proc"]["t1"] = None
+        
+        if action == "stop": # stops the timer and adds the recorded time as proc speed to store
+            self._store["proc"]["t1"] = time.perf_counter()
+            if self._store["proc"]["t0"] is None:
+                raise ValueError("start time for batchtimer was not set!")
+            if self._store["proc"]["t0"] >= self._store["proc"]["t1"]:
+                raise ValueError(f"got t0: {self._store["proc"]["t0"]} and t1: {self._store["proc"]["t1"]}!")
+            if batch_size is None:
+                raise ValueError(f"please specify a batch size when stopping the timer!")
+            
+            self._store["proc"]["speed"].append(batch_size / (self._store["proc"]["t1"] - self._store["proc"]["t0"]))
+            self._store["proc"]["t0"] = None
+            self._store["proc"]["t1"] = None
+        
+        if action == "read":
+            if len(self._store["proc"]["speed"]) == 0:
+                print("warning: there have been no processing speed timings yet!")
+                return 0
+            else:
+                return sum(self._store["proc"]["speed"]) / len(self._store["proc"]["speed"])
         
     def run_jupyter(self, host: str = "127.0.0.1", port: int = 8050):
         """For running the plotter in a Jupyter notebook. Handles all the threading and keeping alive automatically."""
@@ -129,10 +172,11 @@ class DashPlotter:
             self._app.run(
                 host         = host,
                 port         = port,     
-                debug        = True,      
+                debug        = True,    
                 use_reloader = False # this is necessary, because hot reload is not possible in daemon thread 
             )
         threading.Thread(target = _run, daemon = True).start()
+        webbrowser.open_new_tab(f"http://{host}:{port}/")
         
     def run_script_spin(self):
         """For running the plotter in a script. Run this at the very end of the script. Keeps the app thread alive until the script is interrupted with ctrl+C to be able to view the data and interact with it."""

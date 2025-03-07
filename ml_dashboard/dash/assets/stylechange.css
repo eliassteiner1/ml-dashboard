@@ -1,4 +1,3 @@
-
 html, body { /* remove any padding and margin so that the uppermost div grid fits nicely into the window */
     margin:  0;
     padding: 0;
@@ -16,7 +15,7 @@ html, body { /* remove any padding and margin so that the uppermost div grid fit
     grid-template-columns: repeat(11, 1fr);
     grid-template-areas: 
         "A A A A A A A A D D D"
-        "A A A A A A A A D D D"
+        "A A A A A A A A E E E"
         "A A A A A A A A E E E"
         "A A A A A A A A E E E"
         "A A A A A A A A E E E"
@@ -58,14 +57,14 @@ html, body { /* remove any padding and margin so that the uppermost div grid fit
 .header {
     flex-grow: 0;
     flex-shrink: 0;
-    background-color: rgba(188, 38, 38, 0.203);
 
     font-size: 16px;
     font-weight: 800;
-    color: rgb(200, 200, 200);
-    border-bottom: 2px solid rgb(200, 200, 200);
+    color: rgb(127, 101, 158);
+    border-bottom: 2px solid rgb(127, 101, 158);
 
     padding-top: 2px;
+    padding-left: 2px;
     padding-bottom: 2px;
     margin-bottom: 2px;
 
@@ -80,9 +79,26 @@ html, body { /* remove any padding and margin so that the uppermost div grid fit
     font-size: 16px;
     font-weight: 400;
     color: rgb(200, 200, 200);
-    padding-top: 1vh;
+    margin-top: 1vh; /* is beter for scrolling boxes */
 }
 .graph {
     height: 100%;
     width: 100%;
+}
+.proc-speed {
+    display: flex;
+    justify-content: center; /* centers children horizontally */
+    align-items: center; /* centers children vertically */
+    
+    font-size: 18px;
+    font-weight: 800;
+}
+.model-info {
+    display: flex;
+    white-space: pre-wrap; /* respects \n newline characters and other formatting */
+    overflow: scroll;
+
+    font-size: 12px;
+
+
 }
