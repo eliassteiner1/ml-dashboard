@@ -30,13 +30,19 @@ def determine_single_range(MIN: float, MAX: float, factor: float):
     rng      = [min(possible), max(possible)]
     return rng
 
-def determine_mixed_range(RNG1: list, RNG2: list):
+def determine_mixed_range(RNG1: list, RNG2: list, ε: float = 1e-6):
     """ determines the best range for a subplot mixed y axis range so that both ranges have the same ratio of above zeroline and below zeroline spans. assumes max is > 0 and min is < 0!"""
 
     # use a geometric mean of both ratios to find a sensible ratio that works the best for both
-    R1_ORIG = RNG1[1] / -RNG1[0] 
-    R2_ORIG = RNG2[1] / -RNG2[0]
-    RBAR    = (R1_ORIG * R2_ORIG)**0.5
+    R1_ORIG = (RNG1[1] + ε) / (-RNG1[0] + ε)
+    R2_ORIG = (RNG2[1] + ε) / (-RNG2[0] + ε)
+    
+    if   (RNG1[0] == 0) and (RNG1[1] == 0):
+        RBAR = R2_ORIG
+    elif (RNG2[0] == 0) and (RNG2[1] == 0):
+        RBAR = R1_ORIG
+    else:  
+        RBAR= (R1_ORIG * R2_ORIG)**0.5
     
     # then, scale both old ratios, so that they obey the geometric mean ratio. but scale the ratios, so that ranges are only axpanded and not shortened, in order not to clip any data 
     
