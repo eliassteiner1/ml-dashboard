@@ -245,7 +245,7 @@ def update_graph_patched(n, old_chkp):
         # freeze the current length of the store, to handle data being appended while this callback runs. It can actually happen, that data is appended in between accessing storex and storey, so that they have unequal length! (can use either x or y length)
         idx_raw_newest = len(store["x"]) - 1 
         
-        # determine the potential new checkpoint: finds the index of the next smaller element (to latest raw x) in the downsampled x "grid". this will be the latest downsampled point that is fully covered by raw data
+        # determine the potential new checkpoint: finds the index of the next smaller element (to latest raw x) in the downsampled x "grid". this will be the latest downsampled point that is fully covered by raw data.
         new_chkp = get_idx_next_smaller(store["x_down"], store["x"][idx_raw_newest])
         
         # exit with no update, if the new raw data doesn't cover a full downsampled x interval

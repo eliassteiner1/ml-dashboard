@@ -14,6 +14,16 @@ def make_graphcard(title: str, gridbox: str, graphid: str, graphfig: go.Figure):
                     className  = "graph",
                     responsive = True,
                     figure     = graphfig,
+                    config     = {
+                        "showTips"            : False, # disable the plotly hints
+                        "displaylogo"         : False,
+                        "toImageButtonOptions": {
+                            "format": "svg", # one of png, svg, jpeg, webp
+                            "scale" : 1,     # multiplies title/legend/axis/canvas sizes by this factor
+                        }
+                    },
+                    
+                    
                 )
             ),
         ]

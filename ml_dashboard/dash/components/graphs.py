@@ -10,12 +10,12 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
     padding_factor = 0.03 # the additional space that is added + and - along the x axis
     smoothing      = 0.60 # smooting factor of all the spline traces
     GRAY_LIGHT     = "rgb(200, 200, 200)"
-    GRAY_DARK      = "rgb(100, 100, 100)"
+    GRAY_DARK      = "rgb(80, 80, 80)"
     PLOT_BGCOLOR   = "rgba(0, 0, 0, 0.0)"
     PAPER_BGCOLOR  = "rgba(0, 0, 0, 0.0)"
     ANNOT_BGCOLOR  = "rgba(20, 20, 20, 1.0)"
     GRIDWIDTH      = 1.0
-    ZEROLINEWIDTH =  2.0
+    ZEROLINEWIDTH =  2.5
     
     
     # some handles for often used vars

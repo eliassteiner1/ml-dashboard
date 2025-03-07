@@ -1,4 +1,6 @@
+import numpy as np
 import matplotlib.colors as mcolors
+import bisect
 
   
 def adjust_alpha(color: str, adjust_a: float):
@@ -55,3 +57,16 @@ def determine_mixed_range(RNG1: list, RNG2: list):
         RNG2[1] = (RBAR / R2_ORIG) * RNG2[1]
         
     return RNG1, RNG2
+
+def idx_next_smaller(seq: list | np.ndarray, new_element: float):
+    """ returns the index of the element in the list that is the next smallest to new_element. when new_element would be exactly the same as one in the sequence, the position is tiebroken to be on the right side of the equal one. """
+
+    if isinstance(seq, list):
+        idx = bisect.bisect_left(seq, new_element)
+        return idx if new_element == seq[idx] else np.clip(idx-1, a_min=0, a_max=None)
+        
+    if isinstance(seq, np.ndarray):
+        idx = np.searchsorted(seq, new_element)
+        return idx if new_element == seq[idx] else np.clip(idx-1, a_min=0, a_max=None)
+
+    raise TypeError(f"the sequence input has to be either a list or and np.ndarray!") 

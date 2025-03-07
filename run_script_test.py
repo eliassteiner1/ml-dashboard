@@ -10,23 +10,23 @@ if __name__ == "__main__":
     os.system("cls" if os.name == "nt" else "clear") # start with an empty terminal
     print(f"\033[1m\033[38;2;51;153;102mrunning script {__file__}... \033[0m")
     
-    totalx = 1_000
+    totalx = 1.0
     setup_options = dict(
         graph1 = dict(
             options = dict(
                 title       = "The Plot in Card A (first one)",
                 subplots    = ...,
-                xlabel      = "nr of samples processed total",
+                xlabel      = "number of samples processed total",
                 ylabel1     = "losses",
                 ylabel2     = False,
                 showmax     = False,
-                showmin     = False,
+                showmin     = "trace2",
                 totalx      = totalx,
-                downsamplex = False,
+                downsamplex = 100,
             ),
             traces  = dict(
-                trace1 = dict(N = "loss_train", C = "firebrick", T = "primary", E = True,  P = True, S = "linear"),
-                trace2 = dict(N = "loss_valid", C = "seagreen",  T = "secondary", E = False, P = True, S = "linear"),
+                trace1 = dict(N = "loss_train", C = "firebrick", T = "primary", E = True,  P = True, S = "spline"),
+                trace2 = dict(N = "loss_valid", C = "seagreen",  T = "primary", E = False, P = True, S = "spline"),
             ),
         ),
         graph2 = dict(
@@ -69,11 +69,9 @@ if __name__ == "__main__":
     PLOTTER = DashPlotter(setup_options)
     PLOTTER.run_script()
     
-
-    
     rnd = lambda: np.random.rand()
     time.sleep(1)
-    N = 1000
+    N = 15_000
     for i in np.linspace(0, totalx, N):
         
         PLOTTER.add_data(graph=1, trace=1, 
@@ -81,7 +79,7 @@ if __name__ == "__main__":
         PLOTTER.add_data(graph=1, trace=2, 
                          x=i, y=(2 - i/totalx)*(5 + rnd()))
         
-        time.sleep(0.03)
+        time.sleep(0.001)
         
         
         

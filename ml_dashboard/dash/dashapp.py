@@ -1,11 +1,12 @@
 ### IMPORTS ############################################################################################################
+import numpy as np
 from   dash import Dash, Input, Output, State, Patch, dcc, html, no_update
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 
 from ml_dashboard.dash.components import make_graphcard
 from ml_dashboard.dash.components import make_flexgraph
-from ml_dashboard.utils           import determine_single_range, determine_mixed_range
+from ml_dashboard.utils           import determine_single_range, determine_mixed_range, idx_next_smaller
 
 
 import time
@@ -60,7 +61,7 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
             
             dcc.Interval(
                 id          = "ud-interval-1",
-                interval    = 1000,
+                interval    = 300,
                 n_intervals = 0,
             ),
             dcc.Interval(
@@ -92,8 +93,6 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
         opt = setup_options["graph1"]["options"]
         trc = setup_options["graph1"]["traces"]
         
-        DO_DOWNSAMPLE   = False
-        
         anyMinMaxChange = False
         
         ptch = Patch()
@@ -109,7 +108,7 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
             # data dependent stuff =============================================
             
             # main data update without downsampling
-            if DO_DOWNSAMPLE is False:
+            if opt["downsamplex"] is False:
                 # freeze the current length of the raw data store, so that it can handle having data appended to the store while this callback runs. It can actually happen, that data is appended in between accessing storex and storey, so that they have unequal length! (can use either x or y length)
                 idx_raw_newest = min(len(store[f"g1"][f"t{t}_x"]), len(store[f"g1"][f"t{t}_y"])) -1
                 
@@ -141,9 +140,58 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
                     chkp_dict[f"t{t}"] = new_chkp
                 
             # main data update with downsampling
-            if DO_DOWNSAMPLE is True:
-                ... 
-              
+            if opt["downsamplex"] is not False:
+                # freeze the current length of the raw data store, so that it can handle having data appended to the store while this callback runs. It can actually happen, that data is appended in between accessing storex and storey, so that they have unequal length! (can use either x or y length)
+                idx_raw_newest = min(len(store[f"g1"][f"t{t}_x"]), len(store[f"g1"][f"t{t}_y"])) -1
+                
+                # determine the potential new checkpoint: finds the index of the next smaller element (to latest raw x) in the downsampled x "grid". this will be the latest downsampled point that is fully covered by raw data.
+                old_chkp = chkp_dict[f"t{t}"]
+                new_chkp = idx_next_smaller(store[f"g1"][f"t{t}_xDown"], store[f"g1"][f"t{t}_x"][idx_raw_newest])
+                
+                # only do data update and downsample if there is enough new data to cover a new xDown point
+                if new_chkp > old_chkp:
+                    
+                    # find the lower end of the raw data that actually needs to be sampled. (just needs to fully cover the x downsampled interval from old_chkp to new_chkp, anything else is redundant)
+                    idx_raw_oldest = idx_next_smaller(store[f"g1"][f"t{t}_x"], store[f"g1"][f"t{t}_xDown"][old_chkp+1])
+                    
+                    # main trace update ----------------------------------------
+                    yDown = np.interp(
+                        store[f"g1"][f"t{t}_xDown"][old_chkp+1:new_chkp+1],
+                        store[f"g1"][f"t{t}_x"][idx_raw_oldest:idx_raw_newest],
+                        store[f"g1"][f"t{t}_y"][idx_raw_oldest:idx_raw_newest]
+                    )
+                    n2t_nr = n2t[f"g1"][f"t{t}_main"]
+                    ptch["data"][n2t_nr]["x"].extend(list(store[f"g1"][f"t{t}_xDown"][old_chkp+1:new_chkp+1]))
+                    ptch["data"][n2t_nr]["y"].extend(list(yDown))
+                    
+                    # endpoint trace -------------------------------------------
+                    if trc[keyT]["P"] is True:
+                        n2t_nr = n2t[f"g1"][f"t{t}_point"]
+                        ptch["data"][n2t_nr]["x"] = [store[f"g1"][f"t{t}_xDown"][new_chkp]]
+                        ptch["data"][n2t_nr]["y"] = [yDown[-1]]
+                    
+                    # error traces ----------------------------------------------
+                    if trc[keyT]["E"] is True:
+                        yLoDown = np.interp(
+                            store[f"g1"][f"t{t}_xDown"][old_chkp+1:new_chkp+1],
+                            store[f"g1"][f"t{t}_x"][idx_raw_oldest:idx_raw_newest],
+                            store[f"g1"][f"t{t}_yLo"][idx_raw_oldest:idx_raw_newest]
+                        )
+                        n2t_nr = n2t[f"g1"][f"t{t}_lo"]
+                        ptch["data"][n2t_nr]["x"].extend(list(store[f"g1"][f"t{t}_xDown"][old_chkp+1:new_chkp+1]))
+                        ptch["data"][n2t_nr]["y"].extend(list(yLoDown))
+                        
+                        yHiDown = np.interp(
+                            store[f"g1"][f"t{t}_xDown"][old_chkp+1:new_chkp+1],
+                            store[f"g1"][f"t{t}_x"][idx_raw_oldest:idx_raw_newest],
+                            store[f"g1"][f"t{t}_yHi"][idx_raw_oldest:idx_raw_newest]
+                        )
+                        n2t_nr = n2t[f"g1"][f"t{t}_hi"]
+                        ptch["data"][n2t_nr]["x"].extend(list(store[f"g1"][f"t{t}_xDown"][old_chkp+1:new_chkp+1]))
+                        ptch["data"][n2t_nr]["y"].extend(list(yHiDown))
+                    
+                    chkp_dict[f"t{t}"] = new_chkp
+                
             # min max lines  ===================================================
             
             # already check if min / max has changed and reset flag to avoid missing updates. 
@@ -185,18 +233,16 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
 
         # adjust range
         if (anyMinMaxChange is True) and (opt["subplots"] is False):
-
             # gather all mins / maxes and take the min / max over all of them (with a ceil / floor of 0)
             MIN = min([store[f"g1"][f"t{int(key[-1])}_yMin"] for key in trc.keys()] + [0])
             MAX = max([store[f"g1"][f"t{int(key[-1])}_yMax"] for key in trc.keys()] + [0])
 
-            yRng = determine_single_range(MAX, MIN, factor=0.1)
+            yRng = determine_single_range(MIN, MAX, factor=0.1)
             
             ptch["layout"]["yaxis"]["autorangeoptions"]["minallowed"] = yRng[0]
             ptch["layout"]["yaxis"]["autorangeoptions"]["maxallowed"] = yRng[1]
                 
         if (anyMinMaxChange is True) and (opt["subplots"] is True):
-            
             # gather all mins / maxes but separate for primary and secondary plot
             MIN1 = min(
                 [store[f"g1"][f"t{int(keyT[-1])}_yMin"] if trc[keyT]["T"] == "primary" else 0 for keyT in trc] + [0]

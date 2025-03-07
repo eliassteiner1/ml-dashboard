@@ -25,7 +25,7 @@ class DashPlotter:
          # TODO: sanitize input options
         self._setup_options = setup_options
         # determine if any trace of a graph needs it to be a plotly subplot, else false
-        for keyG in self._setup_options.keys(): # iterate through graphs
+        for keyG in self._setup_options.keys(): # TODO: cleanup to list comprehension
             any_uses_subplots = False
             for keyT in self._setup_options[keyG]["traces"].keys(): # iterate through traces
                 if self._setup_options[keyG]["traces"][keyT]["T"] == "secondary":
@@ -66,6 +66,11 @@ class DashPlotter:
                 if self._setup_options[keyG]["traces"][keyT]["E"] is True:
                     store[f"g{g}"][f"t{t}_yLo"] = []
                     store[f"g{g}"][f"t{t}_yHi"] = []
+                
+                if self._setup_options[keyG]["options"]["downsamplex"] is not False:
+                    totalX = self._setup_options[keyG]["options"]["totalx"]
+                    NxDown = self._setup_options[keyG]["options"]["downsamplex"]
+                    store[f"g{g}"][f"t{t}_xDown"] = np.linspace(0, totalX, NxDown)
                     
                 t += 1
             t  = 1
