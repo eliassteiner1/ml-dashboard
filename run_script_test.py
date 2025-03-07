@@ -23,10 +23,10 @@ if __name__ == "__main__":
                 showmin     = "trace2",
                 totalx      = totalx,
                 downsamplex = 100,
-            ),
+            ), 
             traces  = dict(
-                trace1 = dict(N = "loss_train", C = "firebrick", T = "primary", E = True,  P = True, S = "spline"),
-                trace2 = dict(N = "loss_valid", C = "seagreen",  T = "primary", E = False, P = True, S = "spline"),
+                trace1 = dict(N = "loss_train", C = "firebrick", T = "primary", E = True,  P = True, S = "linear"),
+                trace2 = dict(N = "loss_valid", C = "seagreen",  T = "primary", E = False, P = True, S = "linear"),
             ),
         ),
         graph2 = dict(

@@ -157,8 +157,8 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
                     # main trace update ----------------------------------------
                     yDown = np.interp(
                         store[f"g1"][f"t{t}_xDown"][old_chkp+1:new_chkp+1],
-                        store[f"g1"][f"t{t}_x"][idx_raw_oldest:idx_raw_newest],
-                        store[f"g1"][f"t{t}_y"][idx_raw_oldest:idx_raw_newest]
+                        store[f"g1"][f"t{t}_x"][idx_raw_oldest:idx_raw_newest+1],
+                        store[f"g1"][f"t{t}_y"][idx_raw_oldest:idx_raw_newest+1]
                     )
                     n2t_nr = n2t[f"g1"][f"t{t}_main"]
                     ptch["data"][n2t_nr]["x"].extend(list(store[f"g1"][f"t{t}_xDown"][old_chkp+1:new_chkp+1]))
@@ -174,8 +174,8 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
                     if trc[keyT]["E"] is True:
                         yLoDown = np.interp(
                             store[f"g1"][f"t{t}_xDown"][old_chkp+1:new_chkp+1],
-                            store[f"g1"][f"t{t}_x"][idx_raw_oldest:idx_raw_newest],
-                            store[f"g1"][f"t{t}_yLo"][idx_raw_oldest:idx_raw_newest]
+                            store[f"g1"][f"t{t}_x"][idx_raw_oldest:idx_raw_newest+1],
+                            store[f"g1"][f"t{t}_yLo"][idx_raw_oldest:idx_raw_newest+1]
                         )
                         n2t_nr = n2t[f"g1"][f"t{t}_lo"]
                         ptch["data"][n2t_nr]["x"].extend(list(store[f"g1"][f"t{t}_xDown"][old_chkp+1:new_chkp+1]))
@@ -183,8 +183,8 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
                         
                         yHiDown = np.interp(
                             store[f"g1"][f"t{t}_xDown"][old_chkp+1:new_chkp+1],
-                            store[f"g1"][f"t{t}_x"][idx_raw_oldest:idx_raw_newest],
-                            store[f"g1"][f"t{t}_yHi"][idx_raw_oldest:idx_raw_newest]
+                            store[f"g1"][f"t{t}_x"][idx_raw_oldest:idx_raw_newest+1],
+                            store[f"g1"][f"t{t}_yHi"][idx_raw_oldest:idx_raw_newest+1]
                         )
                         n2t_nr = n2t[f"g1"][f"t{t}_hi"]
                         ptch["data"][n2t_nr]["x"].extend(list(store[f"g1"][f"t{t}_xDown"][old_chkp+1:new_chkp+1]))
