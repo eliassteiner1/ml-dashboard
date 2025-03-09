@@ -15,7 +15,8 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
     PAPER_BGCOLOR  = "rgba(0, 0, 0, 0.0)"
     ANNOT_BGCOLOR  = "rgba(20, 20, 20, 1.0)"
     GRIDWIDTH      = 1.0
-    ZEROLINEWIDTH =  2.5
+    ZEROLINEWIDTH  = 2.5
+    TRACEWIDTH     = 2.5
     
     # some handles for often used vars
     opt = setup_options[f"graph{graphnr}"]["options"]
@@ -48,7 +49,7 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
                 mode          = "lines",
                 line          = dict(
                     color     = trc[keyT]["C"],
-                    width     = 2.0,
+                    width     = TRACEWIDTH,
                     shape     = trc[keyT]["S"], 
                     smoothing = smoothing,
                 ),
@@ -79,7 +80,7 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
                 mode       = "lines+markers",
                 line       = dict(
                     color = trc[trace_w_min_key]["C"],
-                    width = 2,
+                    width = TRACEWIDTH,
                     dash  = "dot",
                     shape = "linear",
                 ),
@@ -141,7 +142,7 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
                 mode       = "lines+markers",
                 line       = dict(
                     color = trc[trace_w_max_key]["C"],
-                    width = 2,
+                    width = TRACEWIDTH,
                     dash  = "dot",
                     shape = "linear",
                 ),
@@ -259,7 +260,7 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
                 mode          = "markers",
                 marker        = dict(
                     color    = [adjust_alpha(trc[keyT]["C"], 0), trc[keyT]["C"]], 
-                    size     = [10, 4],
+                    size     = [12, 5],
                     gradient = dict(
                         color = [adjust_alpha(trc[keyT]["C"], 0.5), trc[keyT]["C"]], 
                         type  = ["radial", "radial"]

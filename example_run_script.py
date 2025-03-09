@@ -95,7 +95,7 @@ if __name__ == "__main__":
         ),
     )
     
-    PLOTTER = DashPlotter(setup_options, model=DummyNet(), input_size=(100, ))
+    PLOTTER = DashPlotter(setup_options, model=DummyNet())
     PLOTTER.run_script()
     
     rnd = lambda: np.random.rand()

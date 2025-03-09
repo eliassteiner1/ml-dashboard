@@ -198,5 +198,5 @@ def callback_update_proc_speed(store: dict):
         return [f"---'---.-- samples/sec"]
     
     avg_speed = sum(proc_speed) / len(proc_speed)
-    return [f"{avg_speed:0>10,.2f} samples/sec".replace(",", "'")]
+    return [f"{avg_speed:,.2f} samples/sec".replace(",", "'")]
 

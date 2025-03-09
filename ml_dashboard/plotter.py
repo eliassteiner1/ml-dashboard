@@ -5,6 +5,8 @@ import sys
 import threading
 import time
 from   collections import deque
+from   typing import Any
+import copy
 # third-party library imports
 import numpy as np
 import torch
@@ -22,7 +24,7 @@ from   ml_dashboard.dash import make_plotter_app
 
 class DashPlotter:
     
-    def __init__(self, setup_options: dict, model: torch.nn = None, input_size: tuple = None):
+    def __init__(self, setup_options: dict, model: torch.nn = None, input_data: Any = None):
         
          # TODO: sanitize input options
         self._setup_options = setup_options
@@ -36,14 +38,13 @@ class DashPlotter:
                     
         # stores all the raw data from the training loop (losses, etc...)
         self._store = self._make_store()
-        if (model is not None) and (input_size) is not None:
+        if (model is not None) and (input_data is not None):
             model_summary = summary(
                 model, 
-                input_size = input_size, 
-                device     = "cpu", 
-                verbose    = False, 
-                col_names  = ["num_params", "input_size", "output_size", "kernel_size"],
-                col_width  = 20
+                input_data = input_data,
+                col_names  = ["num_params"],
+                col_width  = 12,
+                verbose    = False,
             )
             self._store["summary"] = str(model_summary)
         else: 

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 # TODO: rework and check and possibly add!
 
 def calc_net_nparams(net: nn.Module, only_trainable: bool = False) -> int:

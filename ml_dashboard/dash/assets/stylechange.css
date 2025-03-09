@@ -61,7 +61,7 @@ html, body { /* remove any padding and margin so that the uppermost div grid fit
     font-size: 16px;
     font-weight: 800;
     color: rgb(127, 101, 158);
-    border-bottom: 2px solid rgb(127, 101, 158);
+    border-bottom: 2.5px solid rgb(127, 101, 158);
 
     padding-top: 2px;
     padding-left: 2px;
@@ -95,6 +95,7 @@ html, body { /* remove any padding and margin so that the uppermost div grid fit
 }
 .model-info {
     display: flex;
+    justify-content: center;
     white-space: pre-wrap; /* respects \n newline characters and other formatting */
     overflow: scroll;
 
