@@ -2,7 +2,7 @@
 import numpy as np
 from   dash import Dash, Input, Output, State, Patch, dcc, html, no_update
 import plotly.graph_objects as go
-from   ml_dashboard.utils import determine_single_range, determine_mixed_range, idx_next_smaller
+from   mldashboard.utils import determine_single_range, determine_mixed_range, idx_next_smaller
 
 
 ### DEFINITIONS ########################################################################################################

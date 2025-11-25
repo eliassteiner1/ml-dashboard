@@ -18,7 +18,7 @@ import plotly.io as pio
 from   torchinfo import summary
 import webbrowser
 # local library imports
-from   ml_dashboard.dash import make_plotter_app
+from   mldashboard.dash import make_plotter_app
 
 ### DEFINITIONS ########################################################################################################
 

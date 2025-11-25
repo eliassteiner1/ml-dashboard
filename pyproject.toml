@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mldashboard"
+version = "0.1.0"
+description = "utility package for convenient live plotting of ML training metrics and losses using Dash and Plotly"
+authors = [
+    {name = "Elias Steiner", email = "elias.steiner@gmx.ch"}
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+
+]
+
+[project.urls]
+Homepage = "https://github.com/eliassteiner1/ml_dashboard_2"
+
+[project.scripts]
+
+[tool.setuptools.packages.find]
+include = ["mldashboard", "mldashboard.*"]

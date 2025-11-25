@@ -2,7 +2,7 @@ import numpy as np
 import plotly.graph_objects as go
 from   plotly.subplots import make_subplots
 
-from   ml_dashboard.utils import adjust_alpha
+from   mldashboard.utils import adjust_alpha
 
 
 def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):

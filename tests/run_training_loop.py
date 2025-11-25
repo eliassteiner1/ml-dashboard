@@ -1,4 +1,6 @@
-import os, sys
+import os
+import sys
+from   pathlib import Path
 import copy
 import math
 import random
@@ -14,11 +16,13 @@ import torch.nn as nn
 from   torch.utils.data import DataLoader, Dataset, Sampler, random_split
 from   tqdm import tqdm
 
-from   ml_dashboard import DashPlotter
-from   ml_dashboard import calc_net_nparams
-from   ml_dashboard import calc_net_weightnorm
-from   ml_dashboard import calc_net_gradnorm
-from   ml_dashboard import calc_adam_rates
+sys.path.insert(0, os.path.normcase(Path(__file__).resolve().parents[1]))
+from mldashboard.config.coreconfig import ROOT
+from mldashboard import DashPlotter
+from mldashboard import calc_net_nparams
+from mldashboard import calc_net_weightnorm
+from mldashboard import calc_net_gradnorm
+from mldashboard import calc_adam_rates
 
 
 class MyDataset(Dataset):
@@ -257,6 +261,7 @@ def do_gradnorm(grad_norm_collection: list):
     
     return gn_avg, gn_std_hi, gn_std_lo
 
+
 if __name__ == "__main__":
     os.system("cls" if os.name == "nt" else "clear") # start with an empty terminal
     print(f"\033[1m\033[38;2;51;153;102mrunning script {__file__}... \033[0m")
@@ -266,7 +271,7 @@ if __name__ == "__main__":
     
     # load the data
     n_samples_to_load = 10_000
-    with h5py.File("example_dataset.h5", "r") as f:
+    with h5py.File(ROOT/"tests/data/example_dataset.h5", "r") as f:
         data = [{key: np.array(f[item][key]) for key in f[item]} for item in list(f.keys())[:n_samples_to_load]]
     print("data loaded!") 
     

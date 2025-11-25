@@ -1,15 +1,19 @@
 import os
+import sys
+from   pathlib import Path
 import time
+
 import numpy as np
-from   pprint import pprint
-from   ml_dashboard import DashPlotter
-import torch
 import torch.nn as nn
+
+sys.path.insert(0, os.path.normcase(Path(__file__).resolve().parents[1]))
+from mldashboard import DashPlotter
+
 
 class DummyNet(nn.Module):
     def __init__(self):
         super().__init__()
-        
+
         self.mlp = nn.Sequential(
             nn.Linear(100, 100),
             nn.ReLU(),
@@ -19,7 +23,7 @@ class DummyNet(nn.Module):
             nn.ReLU(),
             nn.Linear(100, 100),
         )
-        
+
         self.layer1 = nn.Linear(100, 20)
         self.layer2 = nn.Linear(20, 10)
         self.layer3 = nn.Linear(10, 1)
@@ -27,13 +31,12 @@ class DummyNet(nn.Module):
 
     def forward(self, x):
         x = self.mlp(x)
-        
+
         x = self.activation(self.layer1(x))
         x = self.activation(self.layer2(x))
         x = self.layer3(x)
-        
+
         return x
-        
 
 if __name__ == "__main__":
     os.system("cls" if os.name == "nt" else "clear") # start with an empty terminal
@@ -152,3 +155,4 @@ if __name__ == "__main__":
    
     PLOTTER.run_script_spin()
         
+

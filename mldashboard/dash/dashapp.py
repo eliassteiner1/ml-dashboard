@@ -4,10 +4,10 @@ from   dash import Dash, Input, Output, State, Patch, dcc, html, no_update
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 
-from ml_dashboard.dash.components import make_graphcard
-from ml_dashboard.dash.components import make_flexgraph
-from ml_dashboard.dash.components import callback_generate_flexgraph_patch
-from ml_dashboard.dash.components import callback_update_proc_speed
+from mldashboard.dash.components import make_graphcard
+from mldashboard.dash.components import make_flexgraph
+from mldashboard.dash.components import callback_generate_flexgraph_patch
+from mldashboard.dash.components import callback_update_proc_speed
 
 
 def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
