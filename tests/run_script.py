@@ -7,7 +7,7 @@ import numpy as np
 import torch.nn as nn
 
 sys.path.insert(0, os.path.normcase(Path(__file__).resolve().parents[1]))
-from mldashboard import DashPlotter
+from mldashboard.plotter import DashPlotter
 
 
 class DummyNet(nn.Module):

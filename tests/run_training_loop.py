@@ -14,15 +14,14 @@ import plotly.graph_objects as go
 import torch
 import torch.nn as nn
 from   torch.utils.data import DataLoader, Dataset, Sampler, random_split
-from   tqdm import tqdm
 
 sys.path.insert(0, os.path.normcase(Path(__file__).resolve().parents[1]))
 from mldashboard.config.coreconfig import ROOT
-from mldashboard import DashPlotter
-from mldashboard import calc_net_nparams
-from mldashboard import calc_net_weightnorm
-from mldashboard import calc_net_gradnorm
-from mldashboard import calc_adam_rates
+from mldashboard.plotter import DashPlotter
+
+from mldashboard.utils.training_metrics import calc_net_weightnorm
+from mldashboard.utils.training_metrics import calc_net_gradnorm
+
 
 
 class MyDataset(Dataset):

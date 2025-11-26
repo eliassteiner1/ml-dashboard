@@ -503,6 +503,7 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
     # ------------------------------------------------------------ create figure
     graph = _init_fig(opt, trc)
     # --------------------------------------------------------------- add traces
+    #TODO: currently the ordering is done here, 
     graph = _add_traces_error(opt, trc, graph)
     graph = _add_traces_main(opt, trc, graph)
     graph = _add_traces_min(opt, trc, graph)

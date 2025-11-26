@@ -1,30 +1,83 @@
 from dataclasses import dataclass
+from functools import cached_property
 
 
-@dataclass
-class GraphTrace:
+@dataclass(frozen=True)
+class TraceConfig:
     """ each trace that's added to a graph will need these config params """
-    name: str # legend name
-    color: str # rgb(x, x, x) or rgba(x, x, x, a) or css name
-    order: str # {primary, secondary}
-    errors: bool # show error bands
-    point: bool = True # show glowing endpoint
-    shape: str = "spline" # {spline, linear}
     
-@dataclass
-class GraphOptions:
-    title: str # main title of this graph
-    subplots: bool # flag for if the plot needs to have subplots (seems to be decided by whether a trace is secondary)
-    xlabel: str # label for x axis
-    ylabel1: str # label for primary y axis
-    ylabel2: str # label for secondary y axis
-    showmax: bool | str # can put a trace name here to show it's maximum value
-    showmin: bool | str # can put a trace name here to show it's minimum value
-    totalx: int # basically xrange max, number of samples
-    downsamplex: bool | int # for downsampling the plots to a fixed resolution to conserve resources
+    # name that is displayed in the legend (could maybe be automated to trace1, trace2, ... but bad practice)
+    name: str 
+    # rgb(x, x, x) or rgba(x, x, x, a) or css name (this could really be automated to select from a palette...)
+    color: str 
+    # to control whether a trace is drawn on a secondary y axis {primary, secondary}
+    yaxis: str   = "primary"
+    # flag to decide whether to show errorbands on a trance
+    errors: bool = False
+    # flag to decide whether to show the endpoint of a trace as a larger dot
+    point: bool  = True
+    # to control how the line is drawn. technically more possible but only linear and spline are nice {spline, linear}
+    shape: str   = "spline"
+    
+    def _sanitize(self):
+        raise NotImplementedError
+        
+        # TODO (
+            # valid name, 
+            # name length, 
+            # valid color format, 
+            # valid order, 
+            # valid shape, 
+            # check if flags are bool
+        # )
+        
+      
+@dataclass(frozen=True)
+class GraphConfig:
+    """ some general graph settings"""
 
+    # settings related to all the traces of the graph (can be x many)
+    traces:      list[TraceConfig]
+    # will just be the title at the top of this plot's card. no default makes sense
+    title:       str  
+    # basically xrange max, number of samples, has to be given!
+    totalx:      int
+    # for downsampling the plots to a fixed resolution to conserve resources (false or some resolution) 
+    downsamplex: bool | int = False
+    # flags to show one max or min value in the graph. can be none or ONE trace number for one of the options
+    showmax:     bool | str = False 
+    showmin:     bool | str = False 
+    # these are just the labels for the plot axes. x is for sure not optional, but still, they could be None
+    xlabel:      bool | str = False # for x axis
+    ylabel1:     bool | str = False # for primary y axis
+    ylabel2:     bool | str = False # for secondary y axis
+
+    # flag for if the plot needs to have subplots
+    @cached_property
+    def has_subplots(self):
+        return any(tr.yaxis=="secondary" for tr in self.traces)
+
+        
+    def _sanitize(self):
+        raise NotImplementedError
+        
+        # TODO (
+            # check at least a trace, check that it's even a list
+            # valid title name, 
+            # valid labels, 
+            # label given at all?, 
+            # only either showmax or showmin,
+            # sane totalx range?, 
+            # sance downsamplex resolution?
+        # )
+
+
+@dataclass(frozen=True)
+class Config:
+    graph1: GraphConfig
+    graph2: GraphConfig
+    graph3: GraphConfig
     
-@dataclass
-class Graph:
-    options: GraphOptions
-    traces: list[GraphTrace]
+    def sanitize(self):
+        ...
+        # TODO ipmlement

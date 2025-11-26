@@ -28,6 +28,7 @@ class DashPlotter:
         
          # TODO: sanitize input options
         self._setup_options = setup_options
+        
         # determine if any trace of a graph needs it to be a plotly subplot, else false
         for keyG in self._setup_options.keys(): # TODO: cleanup to list comprehension
             any_uses_subplots = False
@@ -38,6 +39,8 @@ class DashPlotter:
                     
         # stores all the raw data from the training loop (losses, etc...)
         self._store = self._make_store()
+        
+        # add a model summarry if available
         if (model is not None) and (input_data is not None):
             model_summary = summary(
                 model, 

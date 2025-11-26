@@ -1,1 +1,9 @@
 # TODO, also add to pyproject.toml!
+
+pytorch (install from source)
+
+plotly
+dash
+dash-bootstrap-components
+torchinfo
+h5py
