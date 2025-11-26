@@ -37,20 +37,20 @@ class GraphConfig:
     """ some general graph settings"""
 
     # settings related to all the traces of the graph (can be x many)
-    traces:      list[TraceConfig]
+    traces:  list[TraceConfig]
     # will just be the title at the top of this plot's card. no default makes sense
-    title:       str  
+    title:   str  
     # basically xrange max, number of samples, has to be given!
-    totalx:      int
+    totalx:  int
     # for downsampling the plots to a fixed resolution to conserve resources (false or some resolution) 
-    downsamplex: bool | int = False
+    nxdown:  bool | int = False
     # flags to show one max or min value in the graph. can be none or ONE trace number for one of the options
-    showmax:     bool | str = False 
-    showmin:     bool | str = False 
+    showmax: bool | str = False 
+    showmin: bool | str = False 
     # these are just the labels for the plot axes. x is for sure not optional, but still, they could be None
-    xlabel:      bool | str = False # for x axis
-    ylabel1:     bool | str = False # for primary y axis
-    ylabel2:     bool | str = False # for secondary y axis
+    xlabel:  bool | str = False # for x axis
+    ylabel1: bool | str = False # for primary y axis
+    ylabel2: bool | str = False # for secondary y axis
 
     # flag for if the plot needs to have subplots
     @cached_property
@@ -68,12 +68,12 @@ class GraphConfig:
             # label given at all?, 
             # only either showmax or showmin,
             # sane totalx range?, 
-            # sance downsamplex resolution?
+            # sance downsamplex resolution? (really has to be an integer or bool!)
         # )
 
 
 @dataclass(frozen=True)
-class Config:
+class SetupConfig:
     graph1: GraphConfig
     graph2: GraphConfig
     graph3: GraphConfig

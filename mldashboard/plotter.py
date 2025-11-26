@@ -7,6 +7,8 @@ import time
 from   collections import deque
 from   typing import Any
 import copy
+from dataclasses import fields
+
 # third-party library imports
 import numpy as np
 import torch
@@ -17,41 +19,40 @@ from   plotly.subplots import make_subplots
 import plotly.io as pio
 from   torchinfo import summary
 import webbrowser
+
 # local library imports
-from   mldashboard.dash import make_plotter_app
+from mldashboard.containers.datastore import GraphStore
+from mldashboard.containers.setupconfig import SetupConfig, GraphConfig, TraceConfig
+from mldashboard.containers.datastore import DataStore, TraceStore
+
+from mldashboard.dash import make_plotter_app
+
 
 ### DEFINITIONS ########################################################################################################
 
 class DashPlotter:
     
-    def __init__(self, setup_options: dict, model: torch.nn = None, input_data: Any = None):
+    def __init__(self, CONFIG: SetupConfig, model: torch.nn = None, input_data: Any = None) -> None:
+
+        self._CONFIG = CONFIG
+        self._CONFIG.sanitize()
         
-         # TODO: sanitize input options
-        self._setup_options = setup_options
-        
-        # determine if any trace of a graph needs it to be a plotly subplot, else false
-        for keyG in self._setup_options.keys(): # TODO: cleanup to list comprehension
-            any_uses_subplots = False
-            for keyT in self._setup_options[keyG]["traces"].keys(): # iterate through traces
-                if self._setup_options[keyG]["traces"][keyT]["T"] == "secondary":
-                    any_uses_subplots = True
-            self._setup_options[keyG]["options"]["subplots"] = any_uses_subplots
-                    
         # stores all the raw data from the training loop (losses, etc...)
         self._store = self._make_store()
         
-        # add a model summarry if available
+        # add a model summarry if available TODO: check if this still works, better alternatives?
         if (model is not None) and (input_data is not None):
             model_summary = summary(
                 model, 
                 input_data = input_data,
                 col_names  = ["num_params"],
-                col_width  = 12,
+                col_width  = 12, # TODO: make more adjustable from CONFIG
                 verbose    = False,
             )
-            self._store["summary"] = str(model_summary)
-        else: 
-            self._store["summary"] = "no information available!"
+            self._store.msummary = str(model_summary) # otherwise it's the default field string value
+        
+        
+        #XXX <-------------------------------------------------------------------------------------------
         
         # links an unique identifier to the respective trace number for each trace
         self._n2t = { 
@@ -61,50 +62,48 @@ class DashPlotter:
         }
         
         # TODO: add an n2a dict for doing the same with annotations!
-
+        ...
+        
         # this is the container for the actual plotter app
-        self._app = make_plotter_app(self._setup_options, self._store, self._n2t)
+        self._app = make_plotter_app(self._CONFIG, self._store, self._n2t)
 
-    def _make_store(self):
-        store = {}
+    def _make_store(self) -> DataStore:
         
-        # TODO: change so that this actually uses the number at the end of traceX instead of a counter!
-        g, t = 1, 1
-        for keyG in self._setup_options.keys():
-            store[f"g{g}"] = {}
-            
-            for keyT in self._setup_options[keyG]["traces"].keys():
-                store[f"g{g}"][f"t{t}_x"]       = []
-                store[f"g{g}"][f"t{t}_y"]       = [] 
-                store[f"g{g}"][f"t{t}_yMin"]    = float("inf")
-                store[f"g{g}"][f"t{t}_yMinNew"] = False
-                store[f"g{g}"][f"t{t}_yMax"]    = float("-inf")
-                store[f"g{g}"][f"t{t}_yMaxNew"] = False
+        # initialize with just the default fields, mostly sufficient
+        store = DataStore()
+        
+        # iterate through all the attributes of datastore and modify only the "graphX" fields to add the traces
+        for fd in fields(DataStore):
+        
+            if isinstance(fd.type, GraphStore):
+                graph_config = getattr(self._CONFIG, fd.name)
                 
-                if self._setup_options[keyG]["traces"][keyT]["E"] is True:
-                    store[f"g{g}"][f"t{t}_yLo"] = []
-                    store[f"g{g}"][f"t{t}_yHi"] = []
-                
-                if self._setup_options[keyG]["options"]["downsamplex"] is not False:
-                    totalX = self._setup_options[keyG]["options"]["totalx"]
-                    NxDown = self._setup_options[keyG]["options"]["downsamplex"]
-                    store[f"g{g}"][f"t{t}_xDown"] = np.linspace(0, totalX, NxDown)
+                # iterate through all the traces that were configured for this graph, to add them to store
+                for tr in graph_config.traces:
+                    new_trace = TraceStore()
+                    # add the downsampled-x axis array to the store for all the traces of this graph
+                    if isinstance(graph_config.nxdown, int):
+                        new_trace.add_xdown(totalx=graph_config.totalx, nxdown=graph_config.nxdown)
+                    if tr.errors is True:
+                        new_trace.add_errorband()  
+                    # finally add the customized trace container to this graph
+                    getattr(store, fd.name).traces += [new_trace]
                     
-                t += 1
-            t  = 1
-            g += 1
-        
-        # processing speed containers
-        store["proc"]          = {}
-        store["proc"]["speed"] = deque(maxlen=10)
-        store["proc"]["t0"]    = None
-        store["proc"]["t1"]    = None
-        
+            # skip the other non-graph storages   
+            else:
+                continue
+            
         return store
+
+     
+     
+     
+     
         
     def add_data(self, graph: int, trace: int, x: float, y: float, yStdLo: float = None, yStdHi: float = None):
         # TODO do robust sanitizing of input data! (like detach, cpu, remove Nans, etc...)
         
+        # TODO: change to new containers!
         if isinstance(y, torch.Tensor):
             y = y.detach().cpu().numpy()
         if isinstance(yStdLo, torch.Tensor):
@@ -128,8 +127,12 @@ class DashPlotter:
         if y > self._store[f"g{graph}"][f"t{trace}_yMax"]:
             self._store[f"g{graph}"][f"t{trace}_yMax"]    = float(y)
             self._store[f"g{graph}"][f"t{trace}_yMaxNew"] = True
-            
+
+
+
+
     def batchtimer(self, action: str, batch_size: int = None):
+        # TODO: change to new containers!
         
         if action not in ["start", "stop", "read"]:
             raise ValueError(f"only 'start', 'stop' and 'read' allowed as action! (got {action})")

@@ -3,15 +3,15 @@ import sys
 from   pathlib import Path
 
 sys.path.insert(0, os.path.normcase(Path(__file__).resolve().parents[2]))
-from mldashboard.containers.config import Config
-from mldashboard.containers.config import GraphConfig
-from mldashboard.containers.config import TraceConfig
+from mldashboard.containers.setupconfig import SetupConfig
+from mldashboard.containers.setupconfig import GraphConfig
+from mldashboard.containers.setupconfig import TraceConfig
 
 
 if __name__ == "__main__":
     os.system("cls" if os.name=="nt" else "clear")
     
-    asdf = Config(
+    CFG = SetupConfig(
         graph1=GraphConfig(
             title  = "graph 1 title",
             totalx = 10_000,
@@ -38,7 +38,7 @@ if __name__ == "__main__":
         ),
     )
     
-    
-    print(asdf.graph1.has_subplots)
-    print(asdf.graph1.has_subplots)
+ 
+    print(CFG.graph1.has_subplots)
+    print(CFG.graph1.has_subplots) # second time is cached!
     

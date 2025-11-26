@@ -89,6 +89,7 @@ def make_plotter_app(setup_options: dict, store: dict, n2t: dict):
                 interval    = 500,
                 n_intervals = 0,
             ),
+            # checkpoints are in stores so that they are "race condition" safe, or rather multithreading-safe?
             dcc.Store(id="chkp-graph-1", data=chkpts[0]),
             dcc.Store(id="chkp-graph-2", data=chkpts[1]),
             dcc.Store(id="chkp-graph-3", data=chkpts[2]),
