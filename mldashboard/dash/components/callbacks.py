@@ -6,7 +6,7 @@ from   mldashboard.utils import determine_single_range, determine_mixed_range, i
 
 
 ### DEFINITIONS ########################################################################################################
-def callback_generate_flexgraph_patch(setup_options: dict, store: dict, n2t: dict, chkp_dict: dict, graphnr: int):
+def callback_generate_flexgraph_patch(setup_options: dict, store: dict, n2t: dict, chkp_traces: dict, graphnr: int):
     # some useful handles
     g   = graphnr
     opt = setup_options[f"graph{g}"]["options"]
@@ -33,7 +33,7 @@ def callback_generate_flexgraph_patch(setup_options: dict, store: dict, n2t: dic
             # freeze the current length of the raw data store, so that it can handle having data appended to the store while this callback runs. It can actually happen, that data is appended in between accessing storex and storey, so that they have unequal length! (can use either x or y length)
             idx_raw_newest = min(len(store[f"g{g}"][f"t{t}_x"]), len(store[f"g{g}"][f"t{t}_y"])) -1
             
-            old_chkp = chkp_dict[f"t{t}"]
+            old_chkp = chkp_traces[f"t{t}"]
             new_chkp = idx_raw_newest
             
             # only do data update if there is some new data
@@ -58,7 +58,7 @@ def callback_generate_flexgraph_patch(setup_options: dict, store: dict, n2t: dic
                     PTCH["data"][n2t_nr]["x"].extend(store[f"g{g}"][f"t{t}_x"][old_chkp+1:new_chkp+1])
                     PTCH["data"][n2t_nr]["y"].extend(store[f"g{g}"][f"t{t}_yHi"][old_chkp+1:new_chkp+1])
                 
-                chkp_dict[f"t{t}"] = new_chkp
+                chkp_traces[f"t{t}"] = new_chkp
             
         # main data update WITH downsampling -----------------------------------
         if opt["downsamplex"] is not False:
@@ -66,7 +66,7 @@ def callback_generate_flexgraph_patch(setup_options: dict, store: dict, n2t: dic
             idx_raw_newest = min(len(store[f"g{g}"][f"t{t}_x"]), len(store[f"g{g}"][f"t{t}_y"])) -1
             
             # determine the potential new checkpoint: finds the index of the next smaller element (to latest raw x) in the downsampled x "grid". this will be the latest downsampled point that is fully covered by raw data.
-            old_chkp = chkp_dict[f"t{t}"]
+            old_chkp = chkp_traces[f"t{t}"]
             new_chkp = idx_next_smaller(store[f"g{g}"][f"t{t}_xDown"], store[f"g{g}"][f"t{t}_x"][idx_raw_newest])
             
             # only do data update and downsample if there is enough new data to cover a new xDown point
@@ -111,7 +111,7 @@ def callback_generate_flexgraph_patch(setup_options: dict, store: dict, n2t: dic
                     PTCH["data"][n2t_nr]["x"].extend(list(store[f"g{g}"][f"t{t}_xDown"][old_chkp+1:new_chkp+1]))
                     PTCH["data"][n2t_nr]["y"].extend(list(yHiDown))
                 
-                chkp_dict[f"t{t}"] = new_chkp
+                chkp_traces[f"t{t}"] = new_chkp
             
         # min/max dependent line updated -------------------------------------------------------------------------------
         
@@ -189,7 +189,7 @@ def callback_generate_flexgraph_patch(setup_options: dict, store: dict, n2t: dic
         PTCH["layout"]["yaxis2"]["autorangeoptions"]["maxallowed"] = yRng2[1]
         
     
-    return PTCH, chkp_dict
+    return PTCH, chkp_traces
 
 def callback_update_proc_speed(store: dict):
     proc_speed = store["proc"]["speed"]

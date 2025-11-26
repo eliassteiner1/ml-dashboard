@@ -24,6 +24,7 @@ import webbrowser
 from mldashboard.containers.datastore import GraphStore
 from mldashboard.containers.setupconfig import SetupConfig, GraphConfig, TraceConfig
 from mldashboard.containers.datastore import DataStore, TraceStore
+from mldashboard.containers.name2id import MapN2Id, GraphN2Id, TraceN2Id
 
 from mldashboard.dash import make_plotter_app
 
@@ -50,22 +51,14 @@ class DashPlotter:
                 verbose    = False,
             )
             self._store.msummary = str(model_summary) # otherwise it's the default field string value
-        
-        
-        #XXX <-------------------------------------------------------------------------------------------
-        
-        # links an unique identifier to the respective trace number for each trace
-        self._n2t = { 
-            "g1": {},
-            "g2": {},
-            "g3": {},
-        }
+
+        self._n2id = self._make_n2id()
         
         # TODO: add an n2a dict for doing the same with annotations!
         ...
         
         # this is the container for the actual plotter app
-        self._app = make_plotter_app(self._CONFIG, self._store, self._n2t)
+        self._app = make_plotter_app(self._CONFIG, self._store, self._n2id)
 
     def _make_store(self) -> DataStore:
         
@@ -73,16 +66,16 @@ class DashPlotter:
         store = DataStore()
         
         # iterate through all the attributes of datastore and modify only the "graphX" fields to add the traces
-        for fd in fields(DataStore):
+        for fd in fields(SetupConfig):
         
-            if isinstance(fd.type, GraphStore):
+            if fd.type is GraphConfig:
                 graph_config = getattr(self._CONFIG, fd.name)
                 
                 # iterate through all the traces that were configured for this graph, to add them to store
                 for tr in graph_config.traces:
                     new_trace = TraceStore()
                     # add the downsampled-x axis array to the store for all the traces of this graph
-                    if isinstance(graph_config.nxdown, int):
+                    if graph_config.nxdown is not False:
                         new_trace.add_xdown(totalx=graph_config.totalx, nxdown=graph_config.nxdown)
                     if tr.errors is True:
                         new_trace.add_errorband()  
@@ -95,9 +88,28 @@ class DashPlotter:
             
         return store
 
-     
-     
-     
+    def _make_n2id(self) -> MapN2Id:
+        
+        # initialize with default fields for now to have a reference
+        n2id = MapN2Id()
+        
+        # iterate through all the fields, but only do something for the GraphN2Id fields
+        for fd in fields(SetupConfig):
+            
+            if fd.type is GraphConfig:
+                graph_config = getattr(self._CONFIG, fd.name)
+
+                #iterate through all the specified traces and add a trace id mapping for each
+                for tr in graph_config.traces:
+                    # register each trace id mapping to the parent GraphN2Id container (multiple traces in one graph)
+                    new_trace = TraceN2Id()._register_parent(getattr(n2id, fd.name))
+                    getattr(n2id, fd.name).traces += [new_trace] 
+            
+            # skip the other non-graph fields (there aren't any, but might be added later)  
+            else:
+                continue
+                      
+        return n2id
      
         
     def add_data(self, graph: int, trace: int, x: float, y: float, yStdLo: float = None, yStdHi: float = None):
