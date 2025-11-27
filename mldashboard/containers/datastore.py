@@ -46,7 +46,8 @@ class TraceStore():
 @dataclass
 class GraphStore:
     traces: list[TraceStore] = field(default_factory=list)
-
+    # t2id
+    # a2id
 
 @dataclass
 class DataStore:

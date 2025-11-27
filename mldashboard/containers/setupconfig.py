@@ -45,8 +45,8 @@ class GraphConfig:
     # for downsampling the plots to a fixed resolution to conserve resources (false or some resolution) 
     nxdown:  bool | int = False
     # flags to show one max or min value in the graph. can be none or ONE trace number for one of the options
-    showmax: bool | str = False 
-    showmin: bool | str = False 
+    showmax: bool | int = False 
+    showmin: bool | int = False 
     # these are just the labels for the plot axes. x is for sure not optional, but still, they could be None
     xlabel:  bool | str = False # for x axis
     ylabel1: bool | str = False # for primary y axis
@@ -69,6 +69,7 @@ class GraphConfig:
             # only either showmax or showmin,
             # sane totalx range?, 
             # sance downsamplex resolution? (really has to be an integer or bool!)
+            # subplots and showmin/showmax is exclusive!
         # )
 
 

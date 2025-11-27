@@ -13,7 +13,10 @@ if __name__ == "__main__":
     cfg = SetupConfig(
         graph1=GraphConfig(
             title  = "graph 1 title",
+            xlabel="xaxis 1",
+            ylabel1="yaxis 1",
             totalx = 10_000,
+            nxdown = 20,
             traces = [  
                 TraceConfig("g1 t1", "red"),
                 TraceConfig("g1 t2", "green", yaxis="secondary"),
@@ -21,6 +24,8 @@ if __name__ == "__main__":
         ),
         graph2=GraphConfig(
             title  = "graph 2 title",
+            xlabel="xaxis 2",
+            ylabel1="yaxis 2",
             totalx = 10_000,
             traces = [ 
                 TraceConfig("g2 t1", "red"),
@@ -29,8 +34,10 @@ if __name__ == "__main__":
         ),
         graph3=GraphConfig(
             title  = "graph 3 title",
+            xlabel="xaxis 3",
+            ylabel1="yaxis 3",
             totalx = 10_000,
-            nxdown = 1_000,
+            nxdown = 10,
             traces = [
                 TraceConfig("g3 t1", "red"),
                 TraceConfig("g3 t2", "green"),
@@ -39,8 +46,6 @@ if __name__ == "__main__":
     )
     
     PLOTTER = DashPlotter(CONFIG=cfg)
-    # PLOTTER.run_script()
-    # PLOTTER.run_script_spin()
-    
-    print(PLOTTER._store.graph1.traces)
-    
+    PLOTTER.run_script()
+    PLOTTER.run_script_spin()
+  

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from dataclasses import field
 
+# TODO: maybe merge this into datastore? otherwise there are going to be a looot of classes
 
 @dataclass
 class TraceN2Id:

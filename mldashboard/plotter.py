@@ -111,7 +111,8 @@ class DashPlotter:
                       
         return n2id
      
-        
+      
+      
     def add_data(self, graph: int, trace: int, x: float, y: float, yStdLo: float = None, yStdHi: float = None):
         # TODO do robust sanitizing of input data! (like detach, cpu, remove Nans, etc...)
         

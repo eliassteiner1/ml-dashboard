@@ -24,13 +24,10 @@ def make_plotter_app(CONFIG: SetupConfig, store: DataStore, n2id: MapN2Id):
         assets_folder        = "./assets" # specify assets folder because project structure is different from default
     )
     
-    # # temp uncomment
-    # graph1 = make_flexgraph(CONFIG, store, n2id, graphnr=1)
-    # graph2 = make_flexgraph(CONFIG, store, n2id, graphnr=2)
-    # graph3 = make_flexgraph(CONFIG, store, n2id, graphnr=3)
-    graph1 = go.Figure()
-    graph2 = go.Figure()
-    graph3 = go.Figure()
+    # temp uncomment
+    graph1 = make_flexgraph(CONFIG.graph1, n2id.graph1)
+    graph2 = make_flexgraph(CONFIG.graph2, n2id.graph2)
+    graph3 = make_flexgraph(CONFIG.graph3, n2id.graph3)
 
     # app layout -------------------------------------------------------------------------------------------------------
     app.layout = html.Div(

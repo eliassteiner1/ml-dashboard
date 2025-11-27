@@ -135,6 +135,7 @@ def callback_generate_flexgraph_patch(setup_options: dict, store: dict, n2t: dic
             
             PTCH["data"][n2t_nr]["y"] = [newMin]*2
             
+            # TODO: here the annotation data index is just hardcoded, maybe use mapping dict too. Not a hhuuuuge problem, since there seems to be only one annotation anyways so far
             PTCH["layout"]["annotations"][0]["text"] = f"<b> minimum:<br> {newMin:07.4f}</b>"
             PTCH["layout"]["annotations"][0]["y"] = newMin
             PTCH["layout"]["annotations"][0]["visible"] = True

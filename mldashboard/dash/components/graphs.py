@@ -4,11 +4,19 @@ from   plotly.subplots import make_subplots
 
 from   mldashboard.utils import adjust_alpha
 
+from ...containers.setupconfig import GraphConfig
+from ...containers.name2id import GraphN2Id
 
-def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
-    # some global customization params. TODO: make nicely controllable globally
-    padding_factor = 0.03 # the additional space that is added + and - along the x axis
-    smoothing      = 0.60 # smooting factor of all the spline traces
+
+def make_flexgraph(G_CFG: GraphConfig, g_n2id: GraphN2Id):
+    
+    # G_CFG is just one graph box of the main config
+    # g_n2id is also just one graph-element of the n2id store
+    
+    # TODO, maybe make this one kind of plot-param dataclass, that can also be passed into the subfunctions
+    # some global customization params
+    PADDING_FACTOR = 0.03 # the additional space that is added + and - along the x axis
+    SMOOTHING      = 0.60 # smooting factor of all the spline traces
     GRAY_LIGHT     = "rgb(200, 200, 200)"
     GRAY_DARK      = "rgb(80, 80, 80)"
     PLOT_BGCOLOR   = "rgba(0, 0, 0, 0.0)"
@@ -18,68 +26,64 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
     ZEROLINEWIDTH  = 2.5
     TRACEWIDTH     = 2.5
     
-    # some handles for often used vars
-    opt = setup_options[f"graph{graphnr}"]["options"]
-    trc = setup_options[f"graph{graphnr}"]["traces"]
-    
     # some precalculated sizes
-    totalx = opt["totalx"] # total number of Samples to be processed. defines x range
-    xrange = [-padding_factor * totalx, (1+padding_factor) * totalx]
-    yrange = [0, None]
+    XRANGE = [-PADDING_FACTOR * G_CFG.totalx, (1+PADDING_FACTOR) * G_CFG.totalx]
+    YRANGE = [0, None]
     
-    def _init_fig(opt: dict, trc: dict):
+    
+    def _init_fig(G_CFG: GraphConfig):
         """ initialize the figure based on whether it needs to have suplots or not """
         
-        if opt["subplots"] is True:
+        if G_CFG.has_subplots is True:
             return make_subplots(specs=[[{"secondary_y": True}]])
         else:
             return go.Figure() 
-        
-    def _add_traces_main(opt: dict, trc: dict, fig: go.Figure):
+      
+    def _add_traces_main(G_CFG: GraphConfig, g_n2id: GraphN2Id, fig: go.Figure):
         """ loop through all the traces in the setup options dict for one graph and add the main traces """
 
-        for keyT in trc.keys():
-            t = int(keyT[-1]) # retrieve trace number at the end of keyname (traceX)
-            
+        for trace_nr, trace_cfg in enumerate(G_CFG.traces):
             # create the trace
             trace = go.Scatter(
                 x             = [None],
                 y             = [None],
-                name          = trc[keyT]["N"],
+                name          = trace_cfg.name,
                 mode          = "lines",
                 line          = dict(
-                    color     = trc[keyT]["C"],
+                    color     = trace_cfg.color,
                     width     = TRACEWIDTH,
-                    shape     = trc[keyT]["S"], 
-                    smoothing = smoothing,
+                    shape     = trace_cfg.shape, 
+                    smoothing = SMOOTHING,
                 ),
-                legendgroup   = f"group{t}",
-                meta          = trc[keyT]["N"], # just to be able to include name in hovertemplate
+                legendgroup   = f"group{trace_nr}",
+                meta          = trace_cfg.name, # just to be able to include name in hovertemplate
                 hovertemplate = "%{meta}: %{y:.4f}<extra></extra>", 
             )
-
+        
             # add the trace to the primary or secondary subplot respectively
-            if opt["subplots"] is True: 
-                fig.add_trace(trace, secondary_y = (False if trc[keyT]["T"] == "primary" else True))
+            if G_CFG.has_subplots is True: 
+                fig.add_trace(trace, secondary_y=(False if trace_cfg.yaxis=="primary" else True))
             else:
                 fig.add_trace(trace)
-                
-            # add an entry for the dict that matches a name to each trace number
-            n2t[f"g{graphnr}"][f"t{t}_main"] = len(n2t[f"g{graphnr}"])
+          
+            # add an entry for the dict that matches a name to each plotly object number
+            g_n2id.traces[trace_nr].register("main")
+
         return fig
-    
-    def _add_traces_min(opt: dict, trc: dict, fig: go.Figure):
-        if opt["showmin"] is not False:
-            trace_w_min_key = opt["showmin"]            # e.g. trace1
-            trace_w_min_nr  = int(trace_w_min_key[-1]) # e.g. 1
+
+    def _add_traces_min(G_CFG: GraphConfig, g_n2id: GraphN2Id, fig: go.Figure):
+        
+        if G_CFG.showmin is not False:
+            # if not false, showmin is expected to be the trace number for which the min is shown
+            trace_nr_with_min  = G_CFG.showmin # e.g. 1
             
             # create the trace
             trace = go.Scatter(
-                x          = [0, xrange[1]], # TODO: check if this is coorect
+                x          = [0, XRANGE[1]], # TODO: check if this is correct
                 y          = [None, None], 
                 mode       = "lines+markers",
                 line       = dict(
-                    color = trc[trace_w_min_key]["C"],
+                    color = G_CFG.traces[trace_nr_with_min].color,
                     width = TRACEWIDTH,
                     dash  = "dot",
                     shape = "linear",
@@ -87,7 +91,7 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
                 marker     = dict(
                     size       = [0, 20],
                     opacity    = [0, 1],
-                    symbol     = ["circle", "triangle-left"], 
+                    symbol     = ["circle", "triangle-left"], # TODO: use rotated shape?!
                     line_width = [0, 0]
                 ),
                 showlegend = False,
@@ -95,19 +99,19 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
             )
             
             # add the trace to the primary or secondary subplot respectively
-            if opt["subplots"] is True: 
-                fig.add_trace(trace, secondary_y = (False if trc[trace_w_min_key]["T"] == "primary" else True))
+            if G_CFG.has_subplots is True: 
+                fig.add_trace(trace, secondary_y=(False if G_CFG.traces[trace_nr_with_min].yaxis=="primary" else True))
             else:
                 fig.add_trace(trace)
             
-            # add an entry for the dict that matches a name to each trace number
-            n2t[f"g{graphnr}"][f"t{trace_w_min_nr}_minline"] = len(n2t[f"g{graphnr}"])
+            # add an entry for the dict that matches a name to each plotly object number
+            g_n2id.traces[trace_nr_with_min].register("minline")
             
             # add the accompanying annotation (hidden until first data update!)
             fig.update_layout(
                 annotations = [
                     dict(
-                        x       = xrange[1],
+                        x       = XRANGE[1],
                         y       = 0, # just a random number for invisible initialization
                         xref    = "x",
                         yref    = "y", # optional y2 should not be neccessary, subplots and showmin/max is exclusive!
@@ -117,7 +121,7 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
                         font      = dict(
                             family = "JetBrains Mono", 
                             size = 14, 
-                            color = trc[trace_w_min_key]["C"],
+                            color = G_CFG.traces[trace_nr_with_min].color,
                         ),
                         showarrow = False,
                         align     = "left",
@@ -127,21 +131,22 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
                 ]
             )
             
+            # TODO register annotation (make something similar to n2id)
             
         return fig
     
-    def _add_traces_max(opt: dict, trc: dict, fig: go.Figure):
-        if opt["showmax"] is not False:
-            trace_w_max_key = opt["showmax"]            # e.g. trace1
-            trace_w_max_nr  = int(trace_w_max_key[-1]) # e.g. 1
+    def _add_traces_max(G_CFG: GraphConfig, g_n2id: GraphN2Id, fig: go.Figure):
+        
+        if G_CFG.showmax is not False:
+            trace_nr_with_max  = G_CFG.showmax # e.g. 1
             
             # create the trace
             trace = go.Scatter(
-                x          = [0, xrange[1]],
+                x          = [0, XRANGE[1]],
                 y          = [None, None], 
                 mode       = "lines+markers",
                 line       = dict(
-                    color = trc[trace_w_max_key]["C"],
+                    color = G_CFG.traces[trace_nr_with_max].color,
                     width = TRACEWIDTH,
                     dash  = "dot",
                     shape = "linear",
@@ -149,7 +154,7 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
                 marker     = dict(
                     size       = [0, 20],
                     opacity    = [0, 1],
-                    symbol     = ["circle", "triangle-left"], 
+                    symbol     = ["circle", "triangle-left"], # TODO: use rotated shape?!
                     line_width = [0, 0]
                 ),
                 showlegend = False,
@@ -157,19 +162,19 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
             )
             
             # add the trace to the primary or secondary subplot respectively
-            if opt["subplots"] is True: 
-                fig.add_trace(trace, secondary_y = (False if trc[trace_w_max_key]["T"] == "primary" else True))
+            if G_CFG.has_subplots is True: 
+                fig.add_trace(trace, secondary_y=(False if G_CFG.traces[trace_nr_with_max].yaxis=="primary" else True))
             else:
                 fig.add_trace(trace)
             
             # add an entry for the dict that matches a name to each trace number
-            n2t[f"g{graphnr}"][f"t{trace_w_max_nr}_maxline"] = len(n2t[f"g{graphnr}"])
+            g_n2id.traces[trace_nr_with_max].register("maxline")
             
             # add the accompanying annotation (hidden until first data update!)
             fig.update_layout(
                 annotations = [
                     dict(
-                        x       = xrange[1],
+                        x       = XRANGE[1],
                         y       = 0, # just a random number for invisible initialization
                         xref    = "x",
                         yref    = "y", # optional y2 should not be neccessary, subplots and showmin/max is exclusive!
@@ -179,7 +184,7 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
                         font      = dict(
                             family = "JetBrains Mono", 
                             size = 14, 
-                            color = trc[trace_w_max_key]["C"],
+                            color = G_CFG.traces[trace_nr_with_max].color,
                         ),
                         showarrow = False,
                         align     = "left",
@@ -189,105 +194,106 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
                 ]
             )
             
+            # TODO register annotation (make something similar to n2id)
+            
         return fig
     
-    def _add_traces_error(opt: dict, trc: dict, fig: go.Figure):
+    def _add_traces_error(G_CFG: GraphConfig, g_n2id: GraphN2Id, fig: go.Figure):
         
-        for keyT in trc.keys():
-            if trc[keyT]["E"] is False:
+        for trace_nr, trace_cfg in enumerate(G_CFG.traces):
+            if trace_cfg.errors is False:
                 continue
-            
-            t = int(keyT[-1]) # retrieve trace number at the end of keyname (traceX)
             
             # create traces
             traceLo = go.Scatter(
                 x           = [None],
                 y           = [None],
-                name        = f"{trc[keyT]["N"]}_lo",
+                name        = f"{trace_cfg.name}_lo",
                 mode        = "lines",
                 line        = dict(
-                    color     = trc[keyT]["C"],
+                    color     = trace_cfg.color,
                     width     = 0, 
-                    shape     = trc[keyT]["S"], 
-                    smoothing = smoothing
+                    shape     = trace_cfg.shape, 
+                    smoothing = SMOOTHING
                 ), 
                 showlegend  = False,
-                legendgroup = f"group{t}",
+                legendgroup = f"group{trace_nr}",
                 hoverinfo   = "none",
-            )
+            )     
             traceHi = go.Scatter(
                 x           = [None],
                 y           = [None],
-                name        = f"{trc[keyT]["N"]}_hi",
+                name        = f"{trace_cfg.name}_hi",
                 mode        = "lines",
                 line        = dict(
-                    color     = trc[keyT]["C"], 
+                    color     = trace_cfg.color, 
                     width     = 0, 
-                    shape     = trc[keyT]["S"], 
-                    smoothing = smoothing,
+                    shape     = trace_cfg.shape, 
+                    smoothing = SMOOTHING,
                 ),
                 fill        = "tonexty",
-                fillcolor   = adjust_alpha(trc[keyT]["C"], 0.25),
+                fillcolor   = adjust_alpha(trace_cfg.color, 0.25),
                 showlegend  = False,
-                legendgroup = f"group{t}",
+                legendgroup = f"group{trace_nr}",
                 hoverinfo   = "none",
             )
             traces = [traceLo, traceHi]
             
             # add the trace to the primary or secondary subplot respectively
-            if opt["subplots"] is True:
-                fig.add_traces(traces, secondary_ys = ([False]*2 if trc[keyT]["T"] == "primary" else [True]*2))
+            if G_CFG.has_subplots is True: 
+                fig.add_trace(traces, secondary_ys=([False]*2 if trace_cfg.yaxis=="primary" else [True]*2))
             else:
-                fig.add_traces(traces)
-                
+                fig.add_trace(traces)
+        
             # add an entry for the dict that matches a name to each trace number
-            n2t[f"g{graphnr}"][f"t{t}_lo"] = len(n2t[f"g{graphnr}"])
-            n2t[f"g{graphnr}"][f"t{t}_hi"] = len(n2t[f"g{graphnr}"])
+            g_n2id.traces[trace_nr].register("lo")
+            g_n2id.traces[trace_nr].register("hi")
+        
         return fig
     
-    def _add_traces_point(opt: dict, trc: dict, fig: go.Figure):
+    def _add_traces_point(G_CFG: GraphConfig, g_n2id: GraphN2Id, fig: go.Figure):
         
-        for keyT in trc.keys():
-            if trc[keyT]["P"] is False:
+        for trace_nr, trace_cfg in enumerate(G_CFG.traces):
+            if trace_cfg.point is False:
                 continue
             
-            t = int(keyT[-1])
-            
-            # create the trace
+            # create the endpoint trace
             trace = go.Scatter(
                 x             = [None, None],
                 y             = [None, None],
                 mode          = "markers",
                 marker        = dict(
-                    color    = [adjust_alpha(trc[keyT]["C"], 0), trc[keyT]["C"]], 
+                    color    = [adjust_alpha(trace_cfg.color, 0), trace_cfg.color], 
                     size     = [12, 5],
                     gradient = dict(
-                        color = [adjust_alpha(trc[keyT]["C"], 0.5), trc[keyT]["C"]], 
+                        color = [adjust_alpha(trace_cfg.color, 0.5), trace_cfg.color], 
                         type  = ["radial", "radial"]
                     ),
                     opacity  = [1.0, 1.0],
                     line     = dict(width = [0, 0]),
                 ),
                 showlegend    = False,
-                legendgroup   = f"group{t}",
-                meta          = trc[keyT]["N"], # just to be able to include name in hovertemplate
+                legendgroup   = f"group{trace_nr}",
+                meta          = trace_cfg.name, # just to be able to include name in hovertemplate
                 hovertemplate = "%{meta}: %{y:.4f}<extra></extra>", 
             )
-            
+        
             # add the trace to the primary or secondary subplot respectively
-            if opt["subplots"] is True:
-                fig.add_trace(trace, secondary_y = (False if trc[keyT]["T"] == "primary" else True))
+            if G_CFG.has_subplots is True: 
+                fig.add_trace(trace, secondary_y=(False if trace_cfg.yaxis=="primary" else True))
             else:
                 fig.add_trace(trace)
+                
+            # add an entry for the dict that matches a name to each plotly object number
+            g_n2id.traces[trace_nr].register("point")
         
-            # add an entry for the dict that matches a name to each trace number
-            n2t[f"g{graphnr}"][f"t{t}_point"] = len(n2t[f"g{graphnr}"])
         return fig
-    
-    def _ud_layout(opt: dict, trc: dict, fig: go.Figure):
+
+
+    def _ud_layout(G_CFG: GraphConfig, fig: go.Figure):
         
         fig.update_layout(
-            uirevision    = "const",
+            uirevision    = "const", # i think this is to preserve zoom?
             margin        = dict(l=0, r=220, t=0, b=0),
             margin_pad    = 5,
             plot_bgcolor  = PLOT_BGCOLOR,
@@ -319,9 +325,9 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
             shapes=[ # adds a vertical line at totalx
                 dict(
                     type = "line",
-                    x0   = totalx,
+                    x0   = G_CFG.totalx,
                     y0   = 0,
-                    x1   = totalx,
+                    x1   = G_CFG.totalx,
                     y1   = 1,
                     xref = "x",
                     yref = "paper",
@@ -337,7 +343,7 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
         
         return fig
     
-    def _ud_x_axis_general(opt: dict, trc: dict, fig: go.Figure):
+    def _ud_x_axis_general(G_CFG: GraphConfig, fig: go.Figure):
         
         fig.update_xaxes(
             tickfont      = dict(
@@ -354,13 +360,13 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
             gridcolor     = GRAY_DARK, 
             griddash      = "dash",
             
-            autorangeoptions_minallowed = xrange[0],
-            autorangeoptions_maxallowed = xrange[1],
+            autorangeoptions_minallowed = XRANGE[0],
+            autorangeoptions_maxallowed = XRANGE[1],
         )
         
         return fig
     
-    def _ud_x_axis_subplots(opt: dict, trc: dict, fig: go.Figure):
+    def _ud_x_axis_subplots(G_CFG: GraphConfig, fig: go.Figure):
         
         fig.update_xaxes(
             domain = [0, 1.0] # makes it so that subplots and normal plots take up the same amount of space
@@ -368,10 +374,10 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
         
         return fig
       
-    def _ud_x_labl_general(opt: dict, trc: dict, fig: go.Figure):
+    def _ud_x_labl_general(G_CFG: GraphConfig, fig: go.Figure):
         
         fig.update_xaxes(
-            title          = opt["xlabel"],
+            title          = G_CFG.xlabel,
             title_standoff = 15,
             title_font     = dict(
                 color  = GRAY_LIGHT,
@@ -383,7 +389,7 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
         
         return fig
     
-    def _ud_y_axis_mono(opt: dict, trc: dict, fig: go.Figure):
+    def _ud_y_axis_mono(G_CFG: GraphConfig, fig: go.Figure):
         
         fig.update_yaxes(
             tickfont       = dict(
@@ -400,15 +406,15 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
             gridwidth      = GRIDWIDTH, 
             gridcolor      = GRAY_DARK,
             
-            autorangeoptions_minallowed = yrange[0],
+            autorangeoptions_minallowed = YRANGE[0],
         )
         
         return fig
       
-    def _ud_y_labl_mono(opt: dict, trc: dict, fig: go.Figure):
+    def _ud_y_labl_mono(G_CFG: GraphConfig, fig: go.Figure):
         
         fig.update_yaxes(
-            title          = opt["ylabel1"],
+            title          = G_CFG.ylabel1,
             title_standoff = 15,
             title_font     = dict(
                 color  = GRAY_LIGHT,
@@ -420,7 +426,7 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
         
         return fig
     
-    def _ud_y_axis_primary(opt: dict, trc: dict, fig: go.Figure):
+    def _ud_y_axis_primary(G_CFG: GraphConfig, fig: go.Figure):
         
         fig.update_yaxes(
             secondary_y   = False,
@@ -439,12 +445,12 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
             gridwidth     = GRIDWIDTH, 
             gridcolor     = GRAY_DARK,
             
-            autorangeoptions_minallowed = yrange[0],
+            autorangeoptions_minallowed = YRANGE[0],
         )
         
         return fig
     
-    def _ud_y_axis_secondary(opt: dict, trc: dict, fig: go.Figure):
+    def _ud_y_axis_secondary(G_CFG: GraphConfig, fig: go.Figure):
         
         fig.update_yaxes(
             secondary_y= True,
@@ -463,15 +469,15 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
             gridwidth     = GRIDWIDTH, 
             gridcolor     = GRAY_DARK,
             
-            autorangeoptions_minallowed = yrange[0],
+            autorangeoptions_minallowed = YRANGE[0],
         )
         
         return fig
     
-    def _ud_y_labl_primary(opt: dict, trc: dict, fig: go.Figure):
+    def _ud_y_labl_primary(G_CFG: GraphConfig, fig: go.Figure):
         
         fig.update_yaxes(
-            title          = opt["ylabel1"],
+            title          = G_CFG.ylabel1,
             title_standoff = 15,
             title_font     = dict(
                 color  = GRAY_LIGHT,
@@ -484,10 +490,10 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
         
         return fig
     
-    def _ud_y_labl_secondary(opt: dict, trc: dict, fig: go.Figure):
+    def _ud_y_labl_secondary(G_CFG: GraphConfig, fig: go.Figure):
         
         fig.update_yaxes(
-            title          = opt["ylabel2"],
+            title          = G_CFG.ylabel2,
             title_standoff = 15,
             title_font     = dict(
                 color  = GRAY_LIGHT,
@@ -500,35 +506,35 @@ def make_flexgraph(setup_options: dict, store: dict, n2t: dict, graphnr: int):
         
         return fig
     
-    # ------------------------------------------------------------ create figure
-    graph = _init_fig(opt, trc)
-    # --------------------------------------------------------------- add traces
-    #TODO: currently the ordering is done here, 
-    graph = _add_traces_error(opt, trc, graph)
-    graph = _add_traces_main(opt, trc, graph)
-    graph = _add_traces_min(opt, trc, graph)
-    graph = _add_traces_max(opt, trc, graph)
-    graph = _add_traces_point(opt, trc, graph)
-    # -------------------------------------------------------- layouting general
-    graph = _ud_layout(opt, trc, graph)
-    # ------------------------------------------------------------- xaxis layout
-    graph = _ud_x_axis_general(opt, trc, graph)
-    if opt["xlabel"] is not False:
-        graph = _ud_x_labl_general(opt, trc, graph)
-    if opt["subplots"] is True:
-        graph = _ud_x_axis_subplots(opt, trc, graph)
-    # ------------------------------------------------------------- yaxis layout
-    if opt["subplots"] is True: 
-        graph = _ud_y_axis_primary(opt, trc, graph)
-        graph = _ud_y_axis_secondary(opt, trc, graph)
-        if opt["ylabel1"] is not False:
-            fig = _ud_y_labl_primary(opt, trc, graph)
-        if opt["ylabel2"] is not False:
-            fig = _ud_y_labl_secondary(opt, trc, graph)
-    else:
-        graph = _ud_y_axis_mono(opt, trc, graph)
-        if opt["ylabel1"] is not False:
-            fig = _ud_y_labl_mono(opt, trc, graph)
     
-    return fig
-
+    # ------------------------------------------------------------ create figure
+    graph = _init_fig(G_CFG)
+    # --------------------------------------------------------------- add traces
+    #TODO: currently the ordering is done here, maybe use zordering?
+    graph = _add_traces_error(G_CFG, g_n2id, graph)
+    graph = _add_traces_main(G_CFG, g_n2id, graph)
+    graph = _add_traces_min(G_CFG, g_n2id, graph)
+    graph = _add_traces_max(G_CFG, g_n2id, graph)
+    graph = _add_traces_point(G_CFG, g_n2id, graph)
+    # -------------------------------------------------------- layouting general
+    graph = _ud_layout(G_CFG, graph)
+    # ------------------------------------------------------------- xaxis layout
+    graph = _ud_x_axis_general(G_CFG, graph)
+    if G_CFG.xlabel is not False:
+        graph = _ud_x_labl_general(G_CFG, graph)
+    if G_CFG.has_subplots is True:
+        graph = _ud_x_axis_subplots(G_CFG, graph)
+    # ------------------------------------------------------------- yaxis layout
+    if G_CFG.has_subplots is True: 
+        graph = _ud_y_axis_primary(G_CFG, graph)
+        graph = _ud_y_axis_secondary(G_CFG, graph)
+        if G_CFG.ylabel1 is not False:
+            graph = _ud_y_labl_primary(G_CFG, graph)
+        if G_CFG.ylabel2 is not False:
+            graph = _ud_y_labl_secondary(G_CFG, graph)
+    else:
+        graph = _ud_y_axis_mono(G_CFG, graph)
+        if G_CFG.ylabel1 is not False:
+            graph = _ud_y_labl_mono(G_CFG, graph)
+    
+    return graph
