@@ -3,19 +3,18 @@ import numpy as np
 from   dash import Dash, Input, Output, State, Patch, dcc, html, no_update
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
-from dataclasses import fields
+from   dataclasses import fields
 
 
-from mldashboard.dash.components import make_graphcard
-from mldashboard.dash.components import make_flexgraph
-from mldashboard.dash.components import callback_generate_flexgraph_patch
-from mldashboard.dash.components import callback_update_proc_speed
+# from mldashboard.dash.components import callback_generate_flexgraph_patch
+# from mldashboard.dash.components import callback_update_proc_speed
+from .components.graphs import make_flexgraph
+from .components.cards import make_graphcard
+from ..containers.setupconfig import Config, GraphConfig, TraceConfig
+from ..containers.datastore import Store, GraphStore, TraceData, TraceT2Id, TraceA2Id, ProcsData
 
-from ..containers.setupconfig import SetupConfig, GraphConfig
-from ..containers.datastore import DataStore
-from ..containers.name2id import MapN2Id
 
-def make_plotter_app(CONFIG: SetupConfig, store: DataStore, n2id: MapN2Id):
+def make_plotter_app(CONFIG: Config, store: Store):
     
     # declare variable and handles -------------------------------------------------------------------------------------
     app = Dash(
@@ -24,10 +23,9 @@ def make_plotter_app(CONFIG: SetupConfig, store: DataStore, n2id: MapN2Id):
         assets_folder        = "./assets" # specify assets folder because project structure is different from default
     )
     
-    # temp uncomment
-    graph1 = make_flexgraph(CONFIG.graph1, n2id.graph1)
-    graph2 = make_flexgraph(CONFIG.graph2, n2id.graph2)
-    graph3 = make_flexgraph(CONFIG.graph3, n2id.graph3)
+    graph1 = make_flexgraph(CONFIG.graph1, store.graph1)
+    graph2 = make_flexgraph(CONFIG.graph2, store.graph2)
+    graph3 = make_flexgraph(CONFIG.graph3, store.graph3)
 
     # app layout -------------------------------------------------------------------------------------------------------
     app.layout = html.Div(
@@ -66,7 +64,7 @@ def make_plotter_app(CONFIG: SetupConfig, store: DataStore, n2id: MapN2Id):
                 className = "card main-grid-boxE",
                 children  = [
                     html.Div(className = "header", children = ["Model Summary"]),
-                    html.Div(className = "body model-info",   children = [store.msummary]),
+                    html.Div(className = "body model-info", children = [store.msummary]),
                 ],
             ),
             

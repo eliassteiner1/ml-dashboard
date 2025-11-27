@@ -3,9 +3,9 @@ import sys
 from   pathlib import Path
 
 sys.path.insert(0, os.path.normcase(Path(__file__).resolve().parents[2]))
-from mldashboard.containers.datastore import DataStore
+from mldashboard.containers.datastore import Store
 from mldashboard.containers.datastore import GraphStore
-from mldashboard.containers.datastore import TraceStore
+from mldashboard.containers.datastore import TraceData
 
 
 if __name__ == "__main__":

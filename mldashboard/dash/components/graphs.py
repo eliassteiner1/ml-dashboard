@@ -5,10 +5,10 @@ from   plotly.subplots import make_subplots
 from   mldashboard.utils import adjust_alpha
 
 from ...containers.setupconfig import GraphConfig
-from ...containers.name2id import GraphN2Id
+from ...containers.datastore import Store, GraphStore, TraceData, TraceT2Id, TraceA2Id
 
 
-def make_flexgraph(G_CFG: GraphConfig, g_n2id: GraphN2Id):
+def make_flexgraph(G_CFG: GraphConfig, g_store: GraphStore):
     
     # G_CFG is just one graph box of the main config
     # g_n2id is also just one graph-element of the n2id store
@@ -39,7 +39,7 @@ def make_flexgraph(G_CFG: GraphConfig, g_n2id: GraphN2Id):
         else:
             return go.Figure() 
       
-    def _add_traces_main(G_CFG: GraphConfig, g_n2id: GraphN2Id, fig: go.Figure):
+    def _add_traces_main(G_CFG: GraphConfig, g_store: GraphStore, fig: go.Figure):
         """ loop through all the traces in the setup options dict for one graph and add the main traces """
 
         for trace_nr, trace_cfg in enumerate(G_CFG.traces):
@@ -67,11 +67,11 @@ def make_flexgraph(G_CFG: GraphConfig, g_n2id: GraphN2Id):
                 fig.add_trace(trace)
           
             # add an entry for the dict that matches a name to each plotly object number
-            g_n2id.traces[trace_nr].register("main")
+            g_store.trc_t2id[trace_nr].register("main")
 
         return fig
 
-    def _add_traces_min(G_CFG: GraphConfig, g_n2id: GraphN2Id, fig: go.Figure):
+    def _add_traces_min(G_CFG: GraphConfig, g_store: GraphStore, fig: go.Figure):
         
         if G_CFG.showmin is not False:
             # if not false, showmin is expected to be the trace number for which the min is shown
@@ -105,7 +105,7 @@ def make_flexgraph(G_CFG: GraphConfig, g_n2id: GraphN2Id):
                 fig.add_trace(trace)
             
             # add an entry for the dict that matches a name to each plotly object number
-            g_n2id.traces[trace_nr_with_min].register("minline")
+            g_store.trc_t2id[trace_nr_with_min].register("minline")
             
             # add the accompanying annotation (hidden until first data update!)
             fig.update_layout(
@@ -131,11 +131,12 @@ def make_flexgraph(G_CFG: GraphConfig, g_n2id: GraphN2Id):
                 ]
             )
             
-            # TODO register annotation (make something similar to n2id)
+            # add an entry for the dict that matches a name to each plotly annotation number
+            g_store.trc_a2id[trace_nr_with_min].register("minline")
             
         return fig
     
-    def _add_traces_max(G_CFG: GraphConfig, g_n2id: GraphN2Id, fig: go.Figure):
+    def _add_traces_max(G_CFG: GraphConfig, g_store: GraphStore, fig: go.Figure):
         
         if G_CFG.showmax is not False:
             trace_nr_with_max  = G_CFG.showmax # e.g. 1
@@ -168,7 +169,7 @@ def make_flexgraph(G_CFG: GraphConfig, g_n2id: GraphN2Id):
                 fig.add_trace(trace)
             
             # add an entry for the dict that matches a name to each trace number
-            g_n2id.traces[trace_nr_with_max].register("maxline")
+            g_store.trc_t2id[trace_nr_with_max].register("maxline")
             
             # add the accompanying annotation (hidden until first data update!)
             fig.update_layout(
@@ -194,11 +195,12 @@ def make_flexgraph(G_CFG: GraphConfig, g_n2id: GraphN2Id):
                 ]
             )
             
-            # TODO register annotation (make something similar to n2id)
+            # add an entry for the dict that matches a name to each plotly annotation number
+            g_store.trc_a2id[trace_nr_with_max].register("maxline")
             
         return fig
     
-    def _add_traces_error(G_CFG: GraphConfig, g_n2id: GraphN2Id, fig: go.Figure):
+    def _add_traces_error(G_CFG: GraphConfig, g_store: GraphStore, fig: go.Figure):
         
         for trace_nr, trace_cfg in enumerate(G_CFG.traces):
             if trace_cfg.errors is False:
@@ -246,12 +248,12 @@ def make_flexgraph(G_CFG: GraphConfig, g_n2id: GraphN2Id):
                 fig.add_trace(traces)
         
             # add an entry for the dict that matches a name to each trace number
-            g_n2id.traces[trace_nr].register("lo")
-            g_n2id.traces[trace_nr].register("hi")
+            g_store.trc_t2id[trace_nr].register("lo")
+            g_store.trc_t2id[trace_nr].register("hi")
         
         return fig
     
-    def _add_traces_point(G_CFG: GraphConfig, g_n2id: GraphN2Id, fig: go.Figure):
+    def _add_traces_point(G_CFG: GraphConfig, g_store: GraphStore, fig: go.Figure):
         
         for trace_nr, trace_cfg in enumerate(G_CFG.traces):
             if trace_cfg.point is False:
@@ -285,7 +287,7 @@ def make_flexgraph(G_CFG: GraphConfig, g_n2id: GraphN2Id):
                 fig.add_trace(trace)
                 
             # add an entry for the dict that matches a name to each plotly object number
-            g_n2id.traces[trace_nr].register("point")
+            g_store.trc_t2id[trace_nr].register("point")
         
         return fig
 
@@ -511,11 +513,11 @@ def make_flexgraph(G_CFG: GraphConfig, g_n2id: GraphN2Id):
     graph = _init_fig(G_CFG)
     # --------------------------------------------------------------- add traces
     #TODO: currently the ordering is done here, maybe use zordering?
-    graph = _add_traces_error(G_CFG, g_n2id, graph)
-    graph = _add_traces_main(G_CFG, g_n2id, graph)
-    graph = _add_traces_min(G_CFG, g_n2id, graph)
-    graph = _add_traces_max(G_CFG, g_n2id, graph)
-    graph = _add_traces_point(G_CFG, g_n2id, graph)
+    graph = _add_traces_error(G_CFG, g_store, graph)
+    graph = _add_traces_main(G_CFG, g_store, graph)
+    graph = _add_traces_min(G_CFG, g_store, graph)
+    graph = _add_traces_max(G_CFG, g_store, graph)
+    graph = _add_traces_point(G_CFG, g_store, graph)
     # -------------------------------------------------------- layouting general
     graph = _ud_layout(G_CFG, graph)
     # ------------------------------------------------------------- xaxis layout

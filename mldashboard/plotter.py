@@ -21,27 +21,26 @@ from   torchinfo import summary
 import webbrowser
 
 # local library imports
-from mldashboard.containers.datastore import GraphStore
-from mldashboard.containers.setupconfig import SetupConfig, GraphConfig, TraceConfig
-from mldashboard.containers.datastore import DataStore, TraceStore
-from mldashboard.containers.name2id import MapN2Id, GraphN2Id, TraceN2Id
+from mldashboard.containers.datastore import Store, GraphStore, TraceData
+from mldashboard.containers.setupconfig import Config, GraphConfig, TraceConfig
 
-from mldashboard.dash import make_plotter_app
+from .dash.dashapp import make_plotter_app
 
 
 ### DEFINITIONS ########################################################################################################
 
 class DashPlotter:
     
-    def __init__(self, CONFIG: SetupConfig, model: torch.nn = None, input_data: Any = None) -> None:
+    def __init__(self, CONFIG: Config, model: torch.nn = None, input_data: Any = None) -> None:
 
+        # stores all the initial configuration parameters
         self._CONFIG = CONFIG
         self._CONFIG.sanitize()
         
         # stores all the raw data from the training loop (losses, etc...)
         self._store = self._make_store()
         
-        # add a model summarry if available TODO: check if this still works, better alternatives?
+        # add a model summarry if available TODO: check if this still works, better alternatives? rework in general
         if (model is not None) and (input_data is not None):
             model_summary = summary(
                 model, 
@@ -51,68 +50,43 @@ class DashPlotter:
                 verbose    = False,
             )
             self._store.msummary = str(model_summary) # otherwise it's the default field string value
-
-        self._n2id = self._make_n2id()
-        
-        # TODO: add an n2a dict for doing the same with annotations!
-        ...
         
         # this is the container for the actual plotter app
-        self._app = make_plotter_app(self._CONFIG, self._store, self._n2id)
+        self._app = make_plotter_app(self._CONFIG, self._store)
 
-    def _make_store(self) -> DataStore:
+    def _make_store(self) -> Store:
         
         # initialize with just the default fields, mostly sufficient
-        store = DataStore()
+        store = Store()
         
-        # iterate through all the attributes of datastore and modify only the "graphX" fields to add the traces
-        for fd in fields(SetupConfig):
-        
-            if fd.type is GraphConfig:
-                graph_config = getattr(self._CONFIG, fd.name)
-                
-                # iterate through all the traces that were configured for this graph, to add them to store
-                for tr in graph_config.traces:
-                    new_trace = TraceStore()
-                    # add the downsampled-x axis array to the store for all the traces of this graph
-                    if graph_config.nxdown is not False:
-                        new_trace.add_xdown(totalx=graph_config.totalx, nxdown=graph_config.nxdown)
-                    if tr.errors is True:
-                        new_trace.add_errorband()  
-                    # finally add the customized trace container to this graph
-                    getattr(store, fd.name).traces += [new_trace]
-                    
-            # skip the other non-graph storages   
-            else:
+        # need to fill the graph1-3 fields with a variable amount of trace-level containers 
+        for fd in fields(Config):
+            if fd.type is not GraphConfig:
                 continue
-            
+            # need handles to the actual, graph-level container objects, not just the field name
+            G_CFG: GraphConfig  = getattr(self._CONFIG, fd.name)
+            g_store: GraphStore = getattr(store, fd.name)
+    
+            # iterate through all the traces that were configured for this graph and add elements for each
+            for trace_cfg in G_CFG.traces:
+                
+                new_trace_data = TraceData()
+                # if one traces graph's data is downsampled, all it's trace need the downsampled-x vector
+                if G_CFG.nxdown is not False:
+                    new_trace_data.add_xdown(totalx=G_CFG.totalx, nxdown=G_CFG.nxdown)
+                # if one trace has errorbands, initialize the respective containers
+                if trace_cfg.errors is True:
+                    new_trace_data.add_errorband()
+                
+                # finally, FOR EACH trace in config, add a data-, t2id- and a2id-container, all on the same index! 
+                g_store.add_trc_data(new_trace_data)
+                g_store.add_trc_t2id() 
+                g_store.add_trc_a2id()            
+  
         return store
 
-    def _make_n2id(self) -> MapN2Id:
+# XXX <------------------------------------------------------------------------------------------------ clean up to here
         
-        # initialize with default fields for now to have a reference
-        n2id = MapN2Id()
-        
-        # iterate through all the fields, but only do something for the GraphN2Id fields
-        for fd in fields(SetupConfig):
-            
-            if fd.type is GraphConfig:
-                graph_config = getattr(self._CONFIG, fd.name)
-
-                #iterate through all the specified traces and add a trace id mapping for each
-                for tr in graph_config.traces:
-                    # register each trace id mapping to the parent GraphN2Id container (multiple traces in one graph)
-                    new_trace = TraceN2Id()._register_parent(getattr(n2id, fd.name))
-                    getattr(n2id, fd.name).traces += [new_trace] 
-            
-            # skip the other non-graph fields (there aren't any, but might be added later)  
-            else:
-                continue
-                      
-        return n2id
-     
-      
-      
     def add_data(self, graph: int, trace: int, x: float, y: float, yStdLo: float = None, yStdHi: float = None):
         # TODO do robust sanitizing of input data! (like detach, cpu, remove Nans, etc...)
         
@@ -140,9 +114,6 @@ class DashPlotter:
         if y > self._store[f"g{graph}"][f"t{trace}_yMax"]:
             self._store[f"g{graph}"][f"t{trace}_yMax"]    = float(y)
             self._store[f"g{graph}"][f"t{trace}_yMaxNew"] = True
-
-
-
 
     def batchtimer(self, action: str, batch_size: int = None):
         # TODO: change to new containers!

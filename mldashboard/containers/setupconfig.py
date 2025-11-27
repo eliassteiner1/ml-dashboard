@@ -30,8 +30,7 @@ class TraceConfig:
             # valid shape, 
             # check if flags are bool
         # )
-        
-      
+             
 @dataclass(frozen=True)
 class GraphConfig:
     """ some general graph settings"""
@@ -72,9 +71,8 @@ class GraphConfig:
             # subplots and showmin/showmax is exclusive!
         # )
 
-
 @dataclass(frozen=True)
-class SetupConfig:
+class Config:
     graph1: GraphConfig
     graph2: GraphConfig
     graph3: GraphConfig
