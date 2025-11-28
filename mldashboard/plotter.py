@@ -25,9 +25,11 @@ from mldashboard.containers.datastore import Store, GraphStore, TraceData
 from mldashboard.containers.setupconfig import Config, GraphConfig, TraceConfig
 
 from .dash.dashapp import make_plotter_app
-
+from .containers.datastore import Store, GraphStore
 
 ### DEFINITIONS ########################################################################################################
+
+# TODO big, trace number starts at 0 right now, but graph is 1-3, probably change graphs to 0-2 !!
 
 class DashPlotter:
     
@@ -85,12 +87,9 @@ class DashPlotter:
   
         return store
 
-# XXX <------------------------------------------------------------------------------------------------ clean up to here
-        
-    def add_data(self, graph: int, trace: int, x: float, y: float, yStdLo: float = None, yStdHi: float = None):
+    def add_data(self, graph_nr: int, trace_nr: int, x: float, y: float, yStdLo: float = None, yStdHi: float = None):
         # TODO do robust sanitizing of input data! (like detach, cpu, remove Nans, etc...)
-        
-        # TODO: change to new containers!
+
         if isinstance(y, torch.Tensor):
             y = y.detach().cpu().numpy()
         if isinstance(yStdLo, torch.Tensor):
@@ -98,53 +97,58 @@ class DashPlotter:
         if isinstance(yStdHi, torch.Tensor):
             yStdHi = yStdHi.detach().cpu().numpy()
         
+        g_store: GraphStore = getattr(self._store, f"graph{graph_nr}")
+
         # add the standard raw data   
-        self._store[f"g{graph}"][f"t{trace}_x"].append(float(x))
-        self._store[f"g{graph}"][f"t{trace}_y"].append(float(y)) 
+        g_store.trc_data[trace_nr].x.append(float(x))
+        g_store.trc_data[trace_nr].y.append(float(y)) 
         
         # add error band data if neccessary
         if (yStdLo is not None) and ( yStdHi is not None):
-            self._store[f"g{graph}"][f"t{trace}_yLo"].append(float(y-yStdLo))
-            self._store[f"g{graph}"][f"t{trace}_yHi"].append(float(y+yStdHi))
+            g_store.trc_data[trace_nr].ylo.append(float(y-yStdLo))
+            g_store.trc_data[trace_nr].yhi.append(float(y+yStdHi)) 
         
         # track the running max / min to avoid taking min / max over all data
-        if y < self._store[f"g{graph}"][f"t{trace}_yMin"]:
-            self._store[f"g{graph}"][f"t{trace}_yMin"]    = float(y)
-            self._store[f"g{graph}"][f"t{trace}_yMinNew"] = True
-        if y > self._store[f"g{graph}"][f"t{trace}_yMax"]:
-            self._store[f"g{graph}"][f"t{trace}_yMax"]    = float(y)
-            self._store[f"g{graph}"][f"t{trace}_yMaxNew"] = True
+        if y < g_store.trc_data[trace_nr].ymin:
+            g_store.trc_data[trace_nr].ymin    = float(y)
+            g_store.trc_data[trace_nr].ynewmin = True
+        if y > g_store.trc_data[trace_nr].ymax:
+            g_store.trc_data[trace_nr].ymax    = float(y)
+            g_store.trc_data[trace_nr].ynewmax = True
 
     def batchtimer(self, action: str, batch_size: int = None):
         # TODO: change to new containers!
         
-        if action not in ["start", "stop", "read"]:
+        if action not in ["start", "stop", "read"]: # TODO: Enum
             raise ValueError(f"only 'start', 'stop' and 'read' allowed as action! (got {action})")
         
         if action == "start": # starts the timer
-            self._store["proc"]["t0"] = time.perf_counter()
-            self._store["proc"]["t1"] = None
+            self._store.procs.t0 = time.perf_counter()
+            self._store.procs.t1 = None
         
         if action == "stop": # stops the timer and adds the recorded time as proc speed to store
-            self._store["proc"]["t1"] = time.perf_counter()
-            if self._store["proc"]["t0"] is None:
+            self._store.procs.t1 = time.perf_counter()
+            if self._store.procs.t0 is None:
                 raise ValueError("start time for batchtimer was not set!")
-            if self._store["proc"]["t0"] >= self._store["proc"]["t1"]:
-                raise ValueError(f"got t0: {self._store["proc"]["t0"]} and t1: {self._store["proc"]["t1"]}!")
+            if self._store.procs.t0 >= self._store.procs.t1:
+                raise ValueError(f"got t0: {self._store.procs.t0} and t1: {self._store.procs.t1}!")
             if batch_size is None:
                 raise ValueError(f"please specify a batch size when stopping the timer!")
             
-            self._store["proc"]["speed"].append(batch_size / (self._store["proc"]["t1"] - self._store["proc"]["t0"]))
-            self._store["proc"]["t0"] = None
-            self._store["proc"]["t1"] = None
+            self._store.procs.speed.append(batch_size / (self._store.procs.t1 - self._store.procs.t0))
+            self._store.procs.t0 = None
+            self._store.procs.t1 = None
         
         if action == "read":
-            if len(self._store["proc"]["speed"]) == 0:
+            if len(self._store.procs.speed) == 0:
                 print("warning: there have been no processing speed timings yet!")
                 return 0
             else:
-                return sum(self._store["proc"]["speed"]) / len(self._store["proc"]["speed"])
-        
+                return sum(self._store.procs.speed) / len(self._store.procs.speed)
+    
+
+    
+    
     def run_jupyter(self, host: str = "127.0.0.1", port: int = 8050):
         """For running the plotter in a Jupyter notebook. Handles all the threading and keeping alive automatically."""
         

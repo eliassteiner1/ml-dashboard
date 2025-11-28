@@ -36,7 +36,7 @@ class GraphConfig:
     """ some general graph settings"""
 
     # settings related to all the traces of the graph (can be x many)
-    traces:  list[TraceConfig]
+    traces:  list[TraceConfig] # TODO: maybe rename this? more in line with the store nomenclature
     # will just be the title at the top of this plot's card. no default makes sense
     title:   str  
     # basically xrange max, number of samples, has to be given!

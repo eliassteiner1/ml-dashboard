@@ -358,9 +358,9 @@ if __name__ == "__main__":
     val_avg, _, _ = do_validation(criterion, model, loader_valid, DEVICE)
     weight_norm   = calc_net_weightnorm(model)
     grad_norm     = [0]
-    PLOTTER.add_data(graph=1, trace=2, x=sample_counter, y=val_avg)
-    PLOTTER.add_data(graph=3, trace=2, x=sample_counter, y=weight_norm)
-    PLOTTER.add_data(graph=3, trace=1, x=sample_counter, y=np.mean(grad_norm), yStdLo=0, yStdHi=0)
+    PLOTTER.add_data(graph_nr=1, trace_nr=2, x=sample_counter, y=val_avg)
+    PLOTTER.add_data(graph_nr=3, trace_nr=2, x=sample_counter, y=weight_norm)
+    PLOTTER.add_data(graph_nr=3, trace_nr=1, x=sample_counter, y=np.mean(grad_norm), yStdLo=0, yStdHi=0)
 
     for E in range(n_epochs):
         
@@ -384,23 +384,23 @@ if __name__ == "__main__":
             sample_counter += BS
             
             grad_norm.append(calc_net_gradnorm(model))
-            PLOTTER.add_data(graph=1, trace=1, x=sample_counter, y=loss_avg, yStdLo=loss_std_lo, yStdHi=loss_std_hi) 
-            PLOTTER.add_data(graph=2, trace=2, x=sample_counter, y=BS)
+            PLOTTER.add_data(graph_nr=1, trace_nr=1, x=sample_counter, y=loss_avg, yStdLo=loss_std_lo, yStdHi=loss_std_hi) 
+            PLOTTER.add_data(graph_nr=2, trace_nr=2, x=sample_counter, y=BS)
 
             time.sleep(0.01)
             
             PLOTTER.batchtimer("stop", batch_size = BS)
-            PLOTTER.add_data(graph=2, trace=1, x=sample_counter, y=PLOTTER.batchtimer("read"))
+            PLOTTER.add_data(graph_nr=2, trace_nr=1, x=sample_counter, y=PLOTTER.batchtimer("read"))
         
         # validation (for plotting)    
         val_avg, _, _ = do_validation(criterion, model, loader_valid, DEVICE)
-        PLOTTER.add_data(graph=1, trace=2, x=sample_counter, y=val_avg)
+        PLOTTER.add_data(graph_nr=1, trace_nr=2, x=sample_counter, y=val_avg)
         # weight norm for plotting
         weight_norm = calc_net_weightnorm(model)
-        PLOTTER.add_data(graph=3, trace=2, x=sample_counter, y=weight_norm)
+        PLOTTER.add_data(graph_nr=3, trace_nr=2, x=sample_counter, y=weight_norm)
         # grad norm
         gn_avg, gn_std_hi, gn_std_lo = do_gradnorm(grad_norm)
-        PLOTTER.add_data(graph=3, trace=1, x=sample_counter, y=gn_avg, yStdLo=gn_std_lo, yStdHi=gn_std_hi)
+        PLOTTER.add_data(graph_nr=3, trace_nr=1, x=sample_counter, y=gn_avg, yStdLo=gn_std_lo, yStdHi=gn_std_hi)
     
     # keep plotter app alive -------------------------------------------------------------------------------------------
     PLOTTER.run_script_spin()

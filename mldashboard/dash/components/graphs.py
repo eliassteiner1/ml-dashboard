@@ -7,7 +7,7 @@ from   mldashboard.utils import adjust_alpha
 from ...containers.setupconfig import GraphConfig
 from ...containers.datastore import Store, GraphStore, TraceData, TraceT2Id, TraceA2Id
 
-
+# TODO: move the subfunctions out of this function, so that they don't use "globals" like they do now
 def make_flexgraph(G_CFG: GraphConfig, g_store: GraphStore):
     
     # G_CFG is just one graph box of the main config
@@ -243,9 +243,9 @@ def make_flexgraph(G_CFG: GraphConfig, g_store: GraphStore):
             
             # add the trace to the primary or secondary subplot respectively
             if G_CFG.has_subplots is True: 
-                fig.add_trace(traces, secondary_ys=([False]*2 if trace_cfg.yaxis=="primary" else [True]*2))
+                fig.add_traces(traces, secondary_ys=([False]*2 if trace_cfg.yaxis=="primary" else [True]*2))
             else:
-                fig.add_trace(traces)
+                fig.add_traces(traces)
         
             # add an entry for the dict that matches a name to each trace number
             g_store.trc_t2id[trace_nr].register("lo")

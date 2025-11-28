@@ -5,9 +5,8 @@ import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 from   dataclasses import fields
 
-
-# from mldashboard.dash.components import callback_generate_flexgraph_patch
-# from mldashboard.dash.components import callback_update_proc_speed
+from .components.callbacks import callback_update_proc_speed
+from .components.callbacks import callback_generate_flexgraph_patch
 from .components.graphs import make_flexgraph
 from .components.cards import make_graphcard
 from ..containers.setupconfig import Config, GraphConfig, TraceConfig
@@ -26,6 +25,15 @@ def make_plotter_app(CONFIG: Config, store: Store):
     graph1 = make_flexgraph(CONFIG.graph1, store.graph1)
     graph2 = make_flexgraph(CONFIG.graph2, store.graph2)
     graph3 = make_flexgraph(CONFIG.graph3, store.graph3)
+    
+    print(len(graph1.data))
+    print(len(graph2.data))
+    print(len(graph3.data))
+    # import json
+    # from ..config.coreconfig import ROOT
+    # fig_dict = graph1.to_plotly_json()
+    # with open(ROOT / "figure.json", "w") as f:
+    #     json.dump(fig_dict, f, indent=4)
 
     # app layout -------------------------------------------------------------------------------------------------------
     app.layout = html.Div(
@@ -88,6 +96,7 @@ def make_plotter_app(CONFIG: Config, store: Store):
                 interval    = 500,
                 n_intervals = 0,
             ),
+            
             # checkpoints are in stores so that they are "race condition" safe, or rather multithreading-safe?
             # initialize the checkpoint for each trace to -1
             dcc.Store(id="g1-chkp-traces", data=[-1]*len(CONFIG.graph1.traces)),
@@ -98,38 +107,36 @@ def make_plotter_app(CONFIG: Config, store: Store):
     
     # callbacks --------------------------------------------------------------------------------------------------------
     
-    # # temp uncomment
-    # @app.callback(
-    #     [Output("graph-card-1", "figure"), Output("g1-chkp-traces", "data")],
-    #     [Input("ud-interval-1", "n_intervals")],
-    #     [State("g1-chkp-traces", "data")]
-    # )
-    # def update_graph_1(n, chkp_traces):
-    #     return callback_generate_flexgraph_patch(CONFIG, store, n2id, chkp_traces, graphnr=1)
+    # temp uncomment
+    @app.callback(
+        [Output("graph-card-1", "figure"), Output("g1-chkp-traces", "data")],
+        [Input("ud-interval-1", "n_intervals")],
+        [State("g1-chkp-traces", "data")]
+    )
+    def update_graph_1(n, g1_chkp):
+        return callback_generate_flexgraph_patch(CONFIG.graph1, store.graph1, g1_chkp)
     
-    # @app.callback(
-    #     [Output("graph-card-2", "figure"), Output("g2-chkp-traces", "data")],
-    #     [Input("ud-interval-2", "n_intervals")],
-    #     [State("g2-chkp-traces", "data")]
-    # )
-    # def update_graph_2(n, chkp_traces):
-    #     return callback_generate_flexgraph_patch(CONFIG, store, n2id, chkp_traces, graphnr=2)
+    @app.callback(
+        [Output("graph-card-2", "figure"), Output("g2-chkp-traces", "data")],
+        [Input("ud-interval-2", "n_intervals")],
+        [State("g2-chkp-traces", "data")]
+    )
+    def update_graph_2(n, g2_chkp):
+        return callback_generate_flexgraph_patch(CONFIG.graph2, store.graph2, g2_chkp)
     
-    # @app.callback(
-    #     [Output("graph-card-3", "figure"), Output("g3-chkp-traces", "data")],
-    #     [Input("ud-interval-3", "n_intervals")],
-    #     [State("g3-chkp-traces", "data")]
-    # )
-    # def update_graph_3(n, chkp_traces):
-    #     return callback_generate_flexgraph_patch(CONFIG, store, n2id, chkp_traces, graphnr=3)
+    @app.callback(
+        [Output("graph-card-3", "figure"), Output("g3-chkp-traces", "data")],
+        [Input("ud-interval-3", "n_intervals")],
+        [State("g3-chkp-traces", "data")]
+    )
+    def update_graph_3(n, g3_chkp):
+        return callback_generate_flexgraph_patch(CONFIG.graph3, store.graph3, g3_chkp)
     
-    # @app.callback(
-    #     [Output("proc-speed-text", "children")],
-    #     [Input("ud-interval-4", "n_intervals")]
-    # )
-    # def update_proc_speed(n):
-    #     return callback_update_proc_speed(store)
+    @app.callback(
+        [Output("proc-speed-text", "children")],
+        [Input("ud-interval-4", "n_intervals")]
+    )
+    def update_proc_speed(n):
+        return callback_update_proc_speed(store)
 
-    
-    
     return app
