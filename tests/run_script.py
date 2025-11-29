@@ -51,13 +51,13 @@ if __name__ == "__main__":
             xlabel  = "xaxis 1",
             ylabel1 = "yaxis 1",
             ylabel2 = False,
-            showmax = False,
-            showmin = 1, # second trace xD # TODO: this is a bit cumbersome
+            showmax = "trace0",
+            showmin = "trace1", #1, # second trace xD # TODO: this is a bit cumbersome
             totalx  = totalx,
             nxdown  = 1_000,
             traces  = [  
-                TraceConfig(name="trace 1", color="firebrick", errors=True),
-                TraceConfig(name="trace 2", color="seagreen"),
+                TraceConfig(name="trace 0", color="firebrick", errors=True),
+                TraceConfig(name="trace 1", color="seagreen"),
             ]
         ),
         graph2=GraphConfig(
@@ -70,9 +70,9 @@ if __name__ == "__main__":
             totalx  = totalx,
             nxdown  = 1_000,
             traces  = [  
-                TraceConfig(name="trace 1", color="gold"),
-                TraceConfig(name="trace 2", color="orange"),
-                TraceConfig(name="trace 3", color="darkorchid", yaxis="secondary"),
+                TraceConfig(name="trace 0", color="gold"),
+                TraceConfig(name="trace 1", color="orange"),
+                TraceConfig(name="trace 2", color="darkorchid", yaxis="secondary"),
             ]
         ),
         graph3=GraphConfig(
@@ -85,8 +85,8 @@ if __name__ == "__main__":
             totalx  = totalx,
             nxdown  = 1_000,
             traces = [
-                TraceConfig(name="trace 1", color="steelblue"),
-                TraceConfig(name="trace 2", color="olive", yaxis="secondary"),
+                TraceConfig(name="trace 0", color="steelblue"),
+                TraceConfig(name="trace 1", color="olive", yaxis="secondary"),
             ]
         ),
     )
@@ -103,50 +103,53 @@ if __name__ == "__main__":
     y2_old = 0
     
     for i in np.linspace(0, totalx, N):
+        
         PLOTTER.batchtimer("start")
         
         # plot 1
         PLOTTER.add_data(
-            graph_nr=1, trace_nr=0, 
+            g_nr=1, t_nr=0, 
             x=i, 
             y= 5*(i/totalx) * np.sin(40*i/totalx) + 2*rnd() +10, 
-            yStdLo=0.5*rnd()+1.5, 
-            yStdHi=0.5*rnd()+1.5
+            yerrLo=0.5*rnd()+1.5, 
+            yerrHi=0.5*rnd()+1.5
         )
-        PLOTTER.add_data(graph_nr=1, trace_nr=1, 
+        PLOTTER.add_data(g_nr=1, t_nr=1, 
                          x=i, y=(2 - i/totalx)*(5 + rnd()))
         
         
         # plot 2
         PLOTTER.add_data(
-            graph_nr=2, trace_nr=0,
+            g_nr=2, t_nr=0,
             x=i, y=5*(i/totalx) * np.sin(100*i/totalx) + 2*rnd() +10
         )
         PLOTTER.add_data(
-            graph_nr=2, trace_nr=1,
+            g_nr=2, t_nr=1,
             x=i, y=5*(i/totalx) * np.cos(100*i/totalx) + 2*rnd() +10
         )
         PLOTTER.add_data(
-            graph_nr=2, trace_nr=2,
+            g_nr=2, t_nr=2,
             x=i, y=np.exp(3*i/totalx) + 2.0*np.exp(i/totalx)*rnd()
         )
         
         # plot 3
         PLOTTER.add_data(
-            graph_nr=3, trace_nr=0,
+            g_nr=3, t_nr=0,
             x=i, y=y1_old + 0.2*rnd()
         )
         PLOTTER.add_data(
-            graph_nr=3, trace_nr=1,
+            g_nr=3, t_nr=1,
             x=i, y=y2_old + 0.2*rnd()
         )
         
         y1_old += 0.08*(rnd() - 0.5)
         y2_old += 0.08*(rnd() - 0.5)
         
+        
+        
         time.sleep(0.01)
         PLOTTER.batchtimer("stop", batch_size=100)
-   
+
     PLOTTER.run_script_spin()
         
 

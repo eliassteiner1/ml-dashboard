@@ -87,34 +87,34 @@ class DashPlotter:
   
         return store
 
-    def add_data(self, graph_nr: int, trace_nr: int, x: float, y: float, yStdLo: float = None, yStdHi: float = None):
+    def add_data(self, g_nr: int, t_nr: int, x: float, y: float, yerrLo: float = None, yerrHi: float = None):
         # TODO do robust sanitizing of input data! (like detach, cpu, remove Nans, etc...)
 
         if isinstance(y, torch.Tensor):
             y = y.detach().cpu().numpy()
-        if isinstance(yStdLo, torch.Tensor):
-            yStdLo = yStdLo.detach().cpu().numpy()
-        if isinstance(yStdHi, torch.Tensor):
-            yStdHi = yStdHi.detach().cpu().numpy()
+        if isinstance(yerrLo, torch.Tensor):
+            yerrLo = yerrLo.detach().cpu().numpy()
+        if isinstance(yerrHi, torch.Tensor):
+            yerrHi = yerrHi.detach().cpu().numpy()
         
-        g_store: GraphStore = getattr(self._store, f"graph{graph_nr}")
+        g_store: GraphStore = getattr(self._store, f"graph{g_nr}")
 
         # add the standard raw data   
-        g_store.trc_data[trace_nr].x.append(float(x))
-        g_store.trc_data[trace_nr].y.append(float(y)) 
+        g_store.trc_data[t_nr].x.append(float(x))
+        g_store.trc_data[t_nr].y.append(float(y)) 
         
         # add error band data if neccessary
-        if (yStdLo is not None) and ( yStdHi is not None):
-            g_store.trc_data[trace_nr].ylo.append(float(y-yStdLo))
-            g_store.trc_data[trace_nr].yhi.append(float(y+yStdHi)) 
+        if (yerrLo is not None) and ( yerrHi is not None):
+            g_store.trc_data[t_nr].ylo.append(float(y-yerrLo))
+            g_store.trc_data[t_nr].yhi.append(float(y+yerrHi)) 
         
         # track the running max / min to avoid taking min / max over all data
-        if y < g_store.trc_data[trace_nr].ymin:
-            g_store.trc_data[trace_nr].ymin    = float(y)
-            g_store.trc_data[trace_nr].ynewmin = True
-        if y > g_store.trc_data[trace_nr].ymax:
-            g_store.trc_data[trace_nr].ymax    = float(y)
-            g_store.trc_data[trace_nr].ynewmax = True
+        if y < g_store.trc_data[t_nr].ymin:
+            g_store.trc_data[t_nr].ymin    = float(y)
+            g_store.trc_data[t_nr].ynewmin = True
+        if y > g_store.trc_data[t_nr].ymax:
+            g_store.trc_data[t_nr].ymax    = float(y)
+            g_store.trc_data[t_nr].ynewmax = True
 
     def batchtimer(self, action: str, batch_size: int = None):
         # TODO: change to new containers!
@@ -145,9 +145,6 @@ class DashPlotter:
                 return 0
             else:
                 return sum(self._store.procs.speed) / len(self._store.procs.speed)
-    
-
-    
     
     def run_jupyter(self, host: str = "127.0.0.1", port: int = 8050):
         """For running the plotter in a Jupyter notebook. Handles all the threading and keeping alive automatically."""
@@ -183,3 +180,4 @@ class DashPlotter:
         except KeyboardInterrupt:
             print("Terminating plotter dash app ...")
 
+# TODO: maybe add context manager type way of running it (to replace script spin?)

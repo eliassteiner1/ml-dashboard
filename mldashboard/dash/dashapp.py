@@ -26,15 +26,6 @@ def make_plotter_app(CONFIG: Config, store: Store):
     graph2 = make_flexgraph(CONFIG.graph2, store.graph2)
     graph3 = make_flexgraph(CONFIG.graph3, store.graph3)
     
-    print(len(graph1.data))
-    print(len(graph2.data))
-    print(len(graph3.data))
-    # import json
-    # from ..config.coreconfig import ROOT
-    # fig_dict = graph1.to_plotly_json()
-    # with open(ROOT / "figure.json", "w") as f:
-    #     json.dump(fig_dict, f, indent=4)
-
     # app layout -------------------------------------------------------------------------------------------------------
     app.layout = html.Div(
         className = "main-grid",

@@ -108,8 +108,6 @@ def callback_generate_flexgraph_patch(G_CFG: GraphConfig, g_store: GraphStore, g
                     plotly_id = g_store.trc_t2id[trace_nr].lo
                     PTCH["data"][plotly_id]["x"].extend(list(g_store.trc_data[trace_nr].xdown[old_chkp+1:new_chkp+1]))
                     PTCH["data"][plotly_id]["y"].extend(list(yLoDown))
-                    
-                    
                     yHiDown = np.interp(
                         g_store.trc_data[trace_nr].xdown[old_chkp+1:new_chkp+1],
                         g_store.trc_data[trace_nr].x[idx_raw_oldest:idx_raw_newest+1],
@@ -137,7 +135,7 @@ def callback_generate_flexgraph_patch(G_CFG: GraphConfig, g_store: GraphStore, g
             g_store.trc_data[trace_nr].ynewmax = False
             
         # ------------------------------------------------- update showmin trace
-        if (G_CFG.showmin==trace_nr) and (hasNewMin is True):
+        if (G_CFG.showmin==f"trace{trace_nr}") and (hasNewMin is True):
             plotly_id = g_store.trc_t2id[trace_nr].minline
             newMin = g_store.trc_data[trace_nr].ymin
             PTCH["data"][plotly_id]["y"] = [newMin]*2 # x coords always stay at either ends of the graph ...
@@ -150,7 +148,7 @@ def callback_generate_flexgraph_patch(G_CFG: GraphConfig, g_store: GraphStore, g
             
         
         # ------------------------------------------------- update showmax trace
-        if (G_CFG.showmax==trace_nr) and (hasNewMax is True):    
+        if (G_CFG.showmax==f"trace{trace_nr}") and (hasNewMax is True):    
             plotly_id = g_store.trc_t2id[trace_nr].maxline
             newMax = g_store.trc_data[trace_nr].ymax
             PTCH["data"][plotly_id]["y"] = [newMax]*2
@@ -203,13 +201,6 @@ def callback_generate_flexgraph_patch(G_CFG: GraphConfig, g_store: GraphStore, g
         PTCH["layout"]["yaxis"]["autorangeoptions"]["maxallowed"]  = yRng1[1]
         PTCH["layout"]["yaxis2"]["autorangeoptions"]["minallowed"] = yRng2[0]
         PTCH["layout"]["yaxis2"]["autorangeoptions"]["maxallowed"] = yRng2[1]
-
-
-    # print(PTCH.to_plotly_json())
-    PTCH = Patch()
-    
-    PTCH["data"][0]["x"].extend([0.5])
-    PTCH["data"][0]["y"].extend([0.5])
     
     return PTCH, g_chkp
 

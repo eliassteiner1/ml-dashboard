@@ -73,9 +73,9 @@ def make_flexgraph(G_CFG: GraphConfig, g_store: GraphStore):
 
     def _add_traces_min(G_CFG: GraphConfig, g_store: GraphStore, fig: go.Figure):
         
-        if G_CFG.showmin is not False:
+        if G_CFG.showmin is not False:            
             # if not false, showmin is expected to be the trace number for which the min is shown
-            trace_nr_with_min  = G_CFG.showmin # e.g. 1
+            trace_nr_with_min  = int(G_CFG.showmin[-1]) # e.g. 1, extract from the traceX string
             
             # create the trace
             trace = go.Scatter(
@@ -108,28 +108,25 @@ def make_flexgraph(G_CFG: GraphConfig, g_store: GraphStore):
             g_store.trc_t2id[trace_nr_with_min].register("minline")
             
             # add the accompanying annotation (hidden until first data update!)
-            fig.update_layout(
-                annotations = [
-                    dict(
-                        x       = XRANGE[1],
-                        y       = 0, # just a random number for invisible initialization
-                        xref    = "x",
-                        yref    = "y", # optional y2 should not be neccessary, subplots and showmin/max is exclusive!
-                        xanchor = "left",
-                        yanchor = "middle",
-                        text    = f"<b> minimum:<br> {0:07.4f}</b>", # same here, random init
-                        font      = dict(
-                            family = "JetBrains Mono", 
-                            size = 14, 
-                            color = G_CFG.traces[trace_nr_with_min].color,
-                        ),
-                        showarrow = False,
-                        align     = "left",
-                        bgcolor   = ANNOT_BGCOLOR,
-                        visible   = False, # will be made visible with the first data update
-                    )
-                ]
+            fig.add_annotation(
+                x       = XRANGE[1],
+                y       = 0, # just a random number for invisible initialization
+                xref    = "x",
+                yref    = "y", # optional y2 should not be neccessary, subplots and showmin/max is exclusive!
+                xanchor = "left",
+                yanchor = "middle",
+                text    = f"<b> minimum:<br> {0:07.4f}</b>", # same here, random init
+                font      = dict(
+                    family = "JetBrains Mono", 
+                    size = 14, 
+                    color = G_CFG.traces[trace_nr_with_min].color,
+                ),
+                showarrow = False,
+                align     = "left",
+                bgcolor   = ANNOT_BGCOLOR,
+                visible   = False, # will be made visible with the first data update
             )
+            
             
             # add an entry for the dict that matches a name to each plotly annotation number
             g_store.trc_a2id[trace_nr_with_min].register("minline")
@@ -139,7 +136,7 @@ def make_flexgraph(G_CFG: GraphConfig, g_store: GraphStore):
     def _add_traces_max(G_CFG: GraphConfig, g_store: GraphStore, fig: go.Figure):
         
         if G_CFG.showmax is not False:
-            trace_nr_with_max  = G_CFG.showmax # e.g. 1
+            trace_nr_with_max  = int(G_CFG.showmax[-1]) # e.g. 1 extract from the traceX string
             
             # create the trace
             trace = go.Scatter(
@@ -172,27 +169,23 @@ def make_flexgraph(G_CFG: GraphConfig, g_store: GraphStore):
             g_store.trc_t2id[trace_nr_with_max].register("maxline")
             
             # add the accompanying annotation (hidden until first data update!)
-            fig.update_layout(
-                annotations = [
-                    dict(
-                        x       = XRANGE[1],
-                        y       = 0, # just a random number for invisible initialization
-                        xref    = "x",
-                        yref    = "y", # optional y2 should not be neccessary, subplots and showmin/max is exclusive!
-                        xanchor = "left",
-                        yanchor = "middle",
-                        text    = f"<b> maximum:<br> {0:07.4f}</b>", # same here, random init
-                        font      = dict(
-                            family = "JetBrains Mono", 
-                            size = 14, 
-                            color = G_CFG.traces[trace_nr_with_max].color,
-                        ),
-                        showarrow = False,
-                        align     = "left",
-                        bgcolor   = ANNOT_BGCOLOR,
-                        visible   = False, # will be made visible with the first data update
-                    )
-                ]
+            fig.add_annotation(
+                x       = XRANGE[1],
+                y       = 0, # just a random number for invisible initialization
+                xref    = "x",
+                yref    = "y", # optional y2 should not be neccessary, subplots and showmin/max is exclusive!
+                xanchor = "left",
+                yanchor = "middle",
+                text    = f"<b> maximum:<br> {0:07.4f}</b>", # same here, random init
+                font      = dict(
+                    family = "JetBrains Mono", 
+                    size = 14, 
+                    color = G_CFG.traces[trace_nr_with_max].color,
+                ),
+                showarrow = False,
+                align     = "left",
+                bgcolor   = ANNOT_BGCOLOR,
+                visible   = False, # will be made visible with the first data update
             )
             
             # add an entry for the dict that matches a name to each plotly annotation number

@@ -18,6 +18,7 @@ from   torch.utils.data import DataLoader, Dataset, Sampler, random_split
 sys.path.insert(0, os.path.normcase(Path(__file__).resolve().parents[1]))
 from mldashboard.config.coreconfig import ROOT
 from mldashboard.plotter import DashPlotter
+from mldashboard.containers.setupconfig import Config, GraphConfig, TraceConfig
 
 from mldashboard.utils.training_metrics import calc_net_weightnorm
 from mldashboard.utils.training_metrics import calc_net_gradnorm
@@ -296,71 +297,63 @@ if __name__ == "__main__":
     optim              = torch.optim.Adam(model.parameters(), lr=10**-3, betas=(0.9, 0.999), weight_decay=0)
         
     # plotter startup app and storage stuff
-    setup_options      = dict(
-        graph1 = dict(
-            options = dict(
-                title       = "Training Loss and Validation Loss",
-                subplots    = ...,
-                xlabel      = "number of samples processed total",
-                ylabel1     = "loss",
-                ylabel2     = False,
-                showmax     = False,
-                showmin     = "trace2",
-                totalx      = n_samples,
-                downsamplex = False,
-            ), 
-            traces  = dict(
-                trace1 = dict(N="loss_train", C="firebrick", T="primary", E=True,  P=True, S="spline"),
-                trace2 = dict(N="loss_valid", C="limegreen", T="primary", E=False, P=True, S="spline"),
-            ),
+    cfg = Config(
+        graph1=GraphConfig(
+            title   = "Training Loss and Validation Loss",
+            xlabel  = "number of samples processed total",
+            ylabel1 = "loss",
+            ylabel2 = False,
+            showmax = False,
+            showmin = "trace1",
+            totalx  = n_samples,
+            nxdown  = False,
+            traces  = [  
+                TraceConfig(name="loss_train", color="firebrick", errors=True),
+                TraceConfig(name="loss_valid", color="seagreen"),
+            ]
         ),
-        graph2 = dict(
-            options = dict(
-                title       = "Processing Metrics",
-                subplots    = ...,
-                xlabel      = False,
-                ylabel1     = "proc. speed",
-                ylabel2     = "batch size",
-                showmax     = False,
-                showmin     = False,
-                totalx      = n_samples,
-                downsamplex = False,
-            ),
-            traces  = dict(
-                trace1 = dict(N="proc. speed", C="gold",       T="primary",   E=False, P=True, S="spline"),
-                trace2 = dict(N="batch sz.",   C="darkorchid", T="secondary", E=False, P=True, S="spline"),
-            ),  
+        graph2=GraphConfig(
+            title   = "Processing Metrics",
+            xlabel  = False,
+            ylabel1 = "proc. speed",
+            ylabel2 = "batch size",
+            showmax = False,
+            showmin = False,
+            totalx  = n_samples,
+            nxdown  = False,
+            traces  = [  
+                TraceConfig(name="proc. speed", color="gold"),
+                TraceConfig(name="batch sz.",   color="darkorchid", yaxis="secondary"),
+            ]
         ),
-        graph3 = dict(
-            options = dict(
-                title       = "Network Statistics: Gradient and Weight Norm",
-                subplots    = ...,
-                xlabel      = False,
-                ylabel1     = "grad norm",
-                ylabel2     = "weight norm",
-                showmax     = False,
-                showmin     = False,
-                totalx      = n_samples,
-                downsamplex = False, 
-            ),
-            traces  = dict(
-                trace1 = dict(N="grad norm",   C="steelblue", T="primary",   E=True,  P=True, S="spline"),
-                trace2 = dict(N="weight norm", C="plum",      T="secondary", E=False, P=True, S="spline"),  
-            ),
+        graph3=GraphConfig(
+            title   = "Network Statistics: Gradient and Weight Norm",
+            xlabel  = False,
+            ylabel1 = "grad norm",
+            ylabel2 = "weight norm",
+            showmax = False,
+            showmin = False,
+            totalx  = n_samples,
+            nxdown  = False,
+            traces = [
+                TraceConfig(name="grad norm",   color="steelblue", errors=True),
+                TraceConfig(name="weight norm", color="plum", yaxis="secondary"),
+            ]
         ),
     )
+    
     sample_counter     = 0
     input_data         = [{"input": torch.tensor([1]).to(DEVICE)}] # example input data for model summary
-    PLOTTER            = DashPlotter(setup_options, model = model, input_data = input_data)
+    PLOTTER            = DashPlotter(cfg, model = model, input_data = input_data)
     PLOTTER.run_script()
       
     # training loop ----------------------------------------------------------------------------------------------------
     val_avg, _, _ = do_validation(criterion, model, loader_valid, DEVICE)
     weight_norm   = calc_net_weightnorm(model)
     grad_norm     = [0]
-    PLOTTER.add_data(graph_nr=1, trace_nr=2, x=sample_counter, y=val_avg)
-    PLOTTER.add_data(graph_nr=3, trace_nr=2, x=sample_counter, y=weight_norm)
-    PLOTTER.add_data(graph_nr=3, trace_nr=1, x=sample_counter, y=np.mean(grad_norm), yStdLo=0, yStdHi=0)
+    PLOTTER.add_data(g_nr=1, t_nr=1, x=sample_counter, y=val_avg)
+    PLOTTER.add_data(g_nr=3, t_nr=1, x=sample_counter, y=weight_norm)
+    PLOTTER.add_data(g_nr=3, t_nr=0, x=sample_counter, y=np.mean(grad_norm), yerrLo=0, yerrHi=0)
 
     for E in range(n_epochs):
         
@@ -384,23 +377,23 @@ if __name__ == "__main__":
             sample_counter += BS
             
             grad_norm.append(calc_net_gradnorm(model))
-            PLOTTER.add_data(graph_nr=1, trace_nr=1, x=sample_counter, y=loss_avg, yStdLo=loss_std_lo, yStdHi=loss_std_hi) 
-            PLOTTER.add_data(graph_nr=2, trace_nr=2, x=sample_counter, y=BS)
+            PLOTTER.add_data(g_nr=1, t_nr=0, x=sample_counter, y=loss_avg, yerrLo=loss_std_lo, yerrHi=loss_std_hi) 
+            PLOTTER.add_data(g_nr=2, t_nr=1, x=sample_counter, y=BS)
 
             time.sleep(0.01)
             
             PLOTTER.batchtimer("stop", batch_size = BS)
-            PLOTTER.add_data(graph_nr=2, trace_nr=1, x=sample_counter, y=PLOTTER.batchtimer("read"))
+            PLOTTER.add_data(g_nr=2, t_nr=0, x=sample_counter, y=PLOTTER.batchtimer("read"))
         
         # validation (for plotting)    
         val_avg, _, _ = do_validation(criterion, model, loader_valid, DEVICE)
-        PLOTTER.add_data(graph_nr=1, trace_nr=2, x=sample_counter, y=val_avg)
+        PLOTTER.add_data(g_nr=1, t_nr=1, x=sample_counter, y=val_avg)
         # weight norm for plotting
         weight_norm = calc_net_weightnorm(model)
-        PLOTTER.add_data(graph_nr=3, trace_nr=2, x=sample_counter, y=weight_norm)
+        PLOTTER.add_data(g_nr=3, t_nr=1, x=sample_counter, y=weight_norm)
         # grad norm
         gn_avg, gn_std_hi, gn_std_lo = do_gradnorm(grad_norm)
-        PLOTTER.add_data(graph_nr=3, trace_nr=1, x=sample_counter, y=gn_avg, yStdLo=gn_std_lo, yStdHi=gn_std_hi)
+        PLOTTER.add_data(g_nr=3, t_nr=0, x=sample_counter, y=gn_avg, yerrLo=gn_std_lo, yerrHi=gn_std_hi)
     
     # keep plotter app alive -------------------------------------------------------------------------------------------
     PLOTTER.run_script_spin()
