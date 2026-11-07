@@ -5,8 +5,8 @@ import plotly.graph_objects as go
 
 from   mldashboard.utils import determine_single_range, determine_mixed_range, idx_next_smaller
 
-from ...containers.setupconfig import Config, GraphConfig, TraceConfig
-from ...containers.datastore import Store, GraphStore, TraceData, TraceT2Id, TraceA2Id, ProcsData
+from mldashboard.containers.setupconfig import Config, GraphConfig, TraceConfig
+from mldashboard.containers.datastore import Store, GraphStore, TraceData, TraceT2Id, TraceA2Id, ProcsData
 
 ### DEFINITIONS ########################################################################################################
 

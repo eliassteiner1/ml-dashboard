@@ -5,12 +5,12 @@ import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 from   dataclasses import fields
 
-from .components.callbacks import callback_update_proc_speed
-from .components.callbacks import callback_generate_flexgraph_patch
-from .components.graphs import make_flexgraph
-from .components.cards import make_graphcard
-from ..containers.setupconfig import Config, GraphConfig, TraceConfig
-from ..containers.datastore import Store, GraphStore, TraceData, TraceT2Id, TraceA2Id, ProcsData
+from mldashboard.app.components.callbacks import callback_update_proc_speed
+from mldashboard.app.components.callbacks import callback_generate_flexgraph_patch
+from mldashboard.app.components.graphs import make_flexgraph
+from mldashboard.app.components.cards import make_graphcard
+from mldashboard.containers.setupconfig import Config, GraphConfig, TraceConfig
+from mldashboard.containers.datastore import Store, GraphStore, TraceData, TraceT2Id, TraceA2Id, ProcsData
 
 
 def make_plotter_app(CONFIG: Config, store: Store):

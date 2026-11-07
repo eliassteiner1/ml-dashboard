@@ -24,8 +24,8 @@ import webbrowser
 from mldashboard.containers.datastore import Store, GraphStore, TraceData
 from mldashboard.containers.setupconfig import Config, GraphConfig, TraceConfig
 
-from .dash.dashapp import make_plotter_app
-from .containers.datastore import Store, GraphStore
+from mldashboard.app.dashapp import make_plotter_app
+from mldashboard.containers.datastore import Store, GraphStore
 
 ### DEFINITIONS ########################################################################################################
 

@@ -1,25 +1,32 @@
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "mldashboard"
 version = "0.1.0"
-description = "utility package for convenient live plotting of ML training metrics and losses using Dash and Plotly"
-authors = [
-    {name = "Elias Steiner", email = "elias.steiner@gmx.ch"}
-]
-license = { file = "LICENSE" }
+description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.10"
+authors = [
+    { name = "Elias Steiner", email = "elias.steiner@gmx.ch" }
+]
+requires-python = ">=3.14"
 dependencies = [
-
+    "dash>=4.5.0",
+    "dash-bootstrap-components>=2.0.4",
+    "h5py>=3.16.0",
+    "matplotlib>=3.11.2",
+    "numpy>=2.5.4",
+    "plotly>=7.1.0",
+    "torch>=2.15.0",
+    "torchinfo>=1.8.0",
 ]
 
-[project.urls]
-Homepage = "https://github.com/eliassteiner1/ml_dashboard_2"
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"
 
-[project.scripts]
+[[tool.uv.index]]
+name = "pytorch-cu134"
+url = "https://download.pytorch.org/whl/cu134"
+explicit = true
 
-[tool.setuptools.packages.find]
-include = ["mldashboard", "mldashboard.*"]
+[tool.uv.sources]
+torch = { index = "pytorch-cu134" }
+torchvision = { index = "pytorch-cu134" }

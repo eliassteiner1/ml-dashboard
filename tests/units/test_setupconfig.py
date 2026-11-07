@@ -2,7 +2,6 @@ import os
 import sys
 from   pathlib import Path
 
-sys.path.insert(0, os.path.normcase(Path(__file__).resolve().parents[2]))
 from mldashboard.containers.setupconfig import Config
 from mldashboard.containers.setupconfig import GraphConfig
 from mldashboard.containers.setupconfig import TraceConfig

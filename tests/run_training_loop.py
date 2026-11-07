@@ -15,8 +15,6 @@ import torch
 import torch.nn as nn
 from   torch.utils.data import DataLoader, Dataset, Sampler, random_split
 
-sys.path.insert(0, os.path.normcase(Path(__file__).resolve().parents[1]))
-from mldashboard.config.coreconfig import ROOT
 from mldashboard.plotter import DashPlotter
 from mldashboard.containers.setupconfig import Config, GraphConfig, TraceConfig
 
@@ -271,7 +269,8 @@ if __name__ == "__main__":
     
     # load the data
     n_samples_to_load = 10_000
-    with h5py.File(ROOT/"tests/data/example_dataset.h5", "r") as f:
+    DATA_DIR = Path(__file__).resolve().parent / "data"
+    with h5py.File(DATA_DIR/"example_dataset.h5", "r") as f:
         data = [{key: np.array(f[item][key]) for key in f[item]} for item in list(f.keys())[:n_samples_to_load]]
     print("data loaded!") 
     

@@ -6,7 +6,6 @@ import time
 import numpy as np
 import torch.nn as nn
 
-sys.path.insert(0, os.path.normcase(Path(__file__).resolve().parents[1]))
 from mldashboard.plotter import DashPlotter
 from mldashboard.containers.setupconfig import Config, GraphConfig, TraceConfig
 

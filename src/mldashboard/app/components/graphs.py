@@ -4,8 +4,8 @@ from   plotly.subplots import make_subplots
 
 from   mldashboard.utils import adjust_alpha
 
-from ...containers.setupconfig import GraphConfig
-from ...containers.datastore import Store, GraphStore, TraceData, TraceT2Id, TraceA2Id
+from mldashboard.containers.setupconfig import GraphConfig
+from mldashboard.containers.datastore import Store, GraphStore, TraceData, TraceT2Id, TraceA2Id
 
 # TODO: move the subfunctions out of this function, so that they don't use "globals" like they do now
 def make_flexgraph(G_CFG: GraphConfig, g_store: GraphStore):
