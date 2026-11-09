@@ -79,7 +79,7 @@ html, body { /* remove any padding and margin so that the uppermost div grid fit
     font-size: 16px;
     font-weight: 400;
     color: rgb(200, 200, 200);
-    margin-top: 1vh; /* is beter for scrolling boxes */
+    margin-top: 1vh; /* is better for scrolling boxes */
 }
 .graph {
     height: 100%;
@@ -93,7 +93,7 @@ html, body { /* remove any padding and margin so that the uppermost div grid fit
     font-size: 18px;
     font-weight: 800;
 }
-.model-info {
+.empty-block {
     display: flex;
     justify-content: center;
     white-space: pre-wrap; /* respects \n newline characters and other formatting */

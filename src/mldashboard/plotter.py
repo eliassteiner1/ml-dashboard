@@ -17,7 +17,6 @@ import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 from   plotly.subplots import make_subplots
 import plotly.io as pio
-from   torchinfo import summary
 import webbrowser
 
 # local library imports
@@ -33,7 +32,7 @@ from mldashboard.containers.datastore import Store, GraphStore
 
 class DashPlotter:
     
-    def __init__(self, CONFIG: Config, model: torch.nn = None, input_data: Any = None) -> None:
+    def __init__(self, CONFIG: Config) -> None:
 
         # stores all the initial configuration parameters
         self._CONFIG = CONFIG
@@ -41,18 +40,7 @@ class DashPlotter:
         
         # stores all the raw data from the training loop (losses, etc...)
         self._store = self._make_store()
-        
-        # add a model summarry if available TODO: check if this still works, better alternatives? rework in general
-        if (model is not None) and (input_data is not None):
-            model_summary = summary(
-                model, 
-                input_data = input_data,
-                col_names  = ["num_params"],
-                col_width  = 12, # TODO: make more adjustable from CONFIG
-                verbose    = False,
-            )
-            self._store.msummary = str(model_summary) # otherwise it's the default field string value
-        
+
         # this is the container for the actual plotter app
         self._app = make_plotter_app(self._CONFIG, self._store)
 
@@ -119,7 +107,7 @@ class DashPlotter:
     def batchtimer(self, action: str, batch_size: int = None):
         # TODO: change to new containers!
         
-        if action not in ["start", "stop", "read"]: # TODO: Enum
+        if action not in ["start", "stop", "read"]: # TODO: make this a method ... or enum
             raise ValueError(f"only 'start', 'stop' and 'read' allowed as action! (got {action})")
         
         if action == "start": # starts the timer

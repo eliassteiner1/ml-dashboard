@@ -10,36 +10,10 @@ from mldashboard.plotter import DashPlotter
 from mldashboard.containers.setupconfig import Config, GraphConfig, TraceConfig
 
 
-class DummyNet(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-        self.mlp = nn.Sequential(
-            nn.Linear(100, 100),
-            nn.ReLU(),
-            nn.Linear(100, 100),
-            nn.ReLU(),
-            nn.Linear(100, 100),
-            nn.ReLU(),
-            nn.Linear(100, 100),
-        )
-
-        self.layer1 = nn.Linear(100, 20)
-        self.layer2 = nn.Linear(20, 10)
-        self.layer3 = nn.Linear(10, 1)
-        self.activation = nn.ReLU()
-
-    def forward(self, x):
-        x = self.mlp(x)
-
-        x = self.activation(self.layer1(x))
-        x = self.activation(self.layer2(x))
-        x = self.layer3(x)
-
-        return x
+# this just plays and feed the plotter artifically generated data
 
 if __name__ == "__main__":
-    os.system("cls" if os.name == "nt" else "clear") # start with an empty terminal
+    print("\033[2J\033[3J\033[H", end="", flush=True) # start with an empty terminal
     print(f"\033[1m\033[38;2;51;153;102mrunning script {__file__}... \033[0m")
 
     totalx = 1.0
@@ -91,7 +65,7 @@ if __name__ == "__main__":
     )
     
 
-    PLOTTER = DashPlotter(CONFIG=cfg, model=DummyNet())
+    PLOTTER = DashPlotter(CONFIG=cfg)
     PLOTTER.run_script()
     
     rnd = lambda: np.random.rand()
@@ -143,7 +117,6 @@ if __name__ == "__main__":
         
         y1_old += 0.08*(rnd() - 0.5)
         y2_old += 0.08*(rnd() - 0.5)
-        
         
         
         time.sleep(0.01)

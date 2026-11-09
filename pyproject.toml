@@ -1,3 +1,8 @@
+# ==============================================================================
+# PACKAGE METAINFO & SHIPPED DEPENDENCIES
+# Everything in this section ends up in the built package (wheel/sdist).
+# ==============================================================================
+
 [project]
 name = "mldashboard"
 version = "0.1.0"
@@ -11,10 +16,9 @@ dependencies = [
     "dash>=4.5.0",
     "dash-bootstrap-components>=2.0.4",
     "h5py>=3.16.0",
-    "matplotlib>=3.11.2",
     "numpy>=2.5.4",
     "plotly>=7.1.0",
-    "torch>=2.15.0",
+    "torch>=2.15.0",    # kept plain on purpose: users pick their own torch build
     "torchinfo>=1.8.0",
 ]
 
@@ -22,11 +26,70 @@ dependencies = [
 requires = ["uv_build>=0.13.7,<0.14.0"]
 build-backend = "uv_build"
 
+
+
+# ==============================================================================
+# DEVELOPMENT ONLY (uv-specific)
+# Nothing below is shipped. Groups, indices and sources are stripped on build,
+# so they only affect the local dev environment and uv.lock.
+#
+# Torch build selection:
+#   uv sync                  -> torch from PyPI (CPU on Windows/macOS, CUDA on Linux)
+#   uv sync --group cpu      -> CPU-only build from the PyTorch index
+#   uv sync --group cu134    -> CUDA 13.4 build from the PyTorch index
+#
+# uv does NOT remember the chosen group: every command that syncs
+# (uv sync / uv run / uv add / uv remove) needs the --group flag again,
+# otherwise torch is switched back to the PyPI build.
+# ==============================================================================
+
+# CUSTOM INDICES: package registries other than PyPI
+# ------------------------------------------------------------------------------
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true # only used for packages that explicitly point here via sources
+
 [[tool.uv.index]]
 name = "pytorch-cu134"
 url = "https://download.pytorch.org/whl/cu134"
-explicit = true
+explicit = true # only used for packages that explicitly point here via sources
 
+# SOURCES: where uv fetches a package from, if not PyPI.
+# Here scoped per group: the index is only used when that group is active.
+# ------------------------------------------------------------------------------
 [tool.uv.sources]
-torch = { index = "pytorch-cu134" }
-torchvision = { index = "pytorch-cu134" }
+torch = [
+  { index = "pytorch-cpu",   group = "cpu" },
+  { index = "pytorch-cu134", group = "cu134" },
+]
+torchvision = [
+  { index = "pytorch-cpu",   group = "cpu" },
+  { index = "pytorch-cu134", group = "cu134" },
+]
+
+# DEPENDENCY GROUPS: dev-only package sets.
+# "dev" is installed by default with uv sync; all other groups are opt-in
+# via uv sync --group <name>.
+# ------------------------------------------------------------------------------
+[dependency-groups]
+dev = [
+    "ipykernel>=7.4.0",
+    "matplotlib>=3.11.2",
+    "nbformat>=5.11.1",
+]
+cpu = [         # torch build variant, see sources above
+    "torch",
+    "torchvision",
+]
+cu134 = [       # torch build variant, see sources above
+    "torch",
+    "torchvision",
+]
+
+# UV SETTINGS
+# conflicts: cpu and cu134 can never be installed together. uv resolves each
+# variant separately and stores all of them in uv.lock.
+# ------------------------------------------------------------------------------
+[tool.uv]
+conflicts = [[{group = "cpu"}, {group = "cu134"}]]

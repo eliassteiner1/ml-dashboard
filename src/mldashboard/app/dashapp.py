@@ -62,8 +62,8 @@ def make_plotter_app(CONFIG: Config, store: Store):
             html.Div(
                 className = "card main-grid-boxE",
                 children  = [
-                    html.Div(className = "header", children = ["Model Summary"]),
-                    html.Div(className = "body model-info", children = [store.msummary]),
+                    html.Div(className = "header", children = ["Empty Block"]),
+                    html.Div(className = "body empty-block", children = ["I'm empty!"]),
                 ],
             ),
             
